@@ -65,6 +65,7 @@ type ComplexityRoot struct {
 	}
 
 	Matrix struct {
+		Admindatabase func(childComplexity int) int
 		ID            func(childComplexity int) int
 		Mongodatabase func(childComplexity int) int
 		Name          func(childComplexity int) int
@@ -79,10 +80,10 @@ type ComplexityRoot struct {
 		DeleteBlock  func(childComplexity int, userID string, matrixID string, num int) int
 		DeleteMatrix func(childComplexity int, id string) int
 		DeleteUser   func(childComplexity int, id string, matrixID string) int
-		UpdateAdmin  func(childComplexity int, id string, matrixID string, username string, email string, password string, privilidge bool) int
-		UpdateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data string, prev string, current string) int
-		UpdateMatrix func(childComplexity int, id string, name string) int
-		UpdateUser   func(childComplexity int, id string, matrixID string, username string, email string, password string, privilidge bool) int
+		UpdateAdmin  func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
+		UpdateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data *string, prev string, current string) int
+		UpdateMatrix func(childComplexity int, id string, name *string) int
+		UpdateUser   func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
 	}
 
 	Query struct {
@@ -108,15 +109,15 @@ type ComplexityRoot struct {
 
 type MutationResolver interface {
 	CreateUser(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.User, error)
-	UpdateUser(ctx context.Context, id string, matrixID string, username string, email string, password string, privilidge bool) (*model.User, error)
+	UpdateUser(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.User, error)
 	DeleteUser(ctx context.Context, id string, matrixID string) (*model.User, error)
 	CreateAdmin(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.Admin, error)
-	UpdateAdmin(ctx context.Context, id string, matrixID string, username string, email string, password string, privilidge bool) (*model.Admin, error)
+	UpdateAdmin(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.Admin, error)
 	CreateMatrix(ctx context.Context, name string) (*model.Matrix, error)
-	UpdateMatrix(ctx context.Context, id string, name string) (*model.Matrix, error)
+	UpdateMatrix(ctx context.Context, id string, name *string) (*model.Matrix, error)
 	DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error)
 	CreateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data string, prev string, current string) (*model.Block, error)
-	UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data string, prev string, current string) (*model.Block, error)
+	UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data *string, prev string, current string) (*model.Block, error)
 	DeleteBlock(ctx context.Context, userID string, matrixID string, num int) (*model.Block, error)
 }
 type QueryResolver interface {
@@ -234,6 +235,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Block.UserID(childComplexity), true
+
+	case "Matrix.admindatabase":
+		if e.complexity.Matrix.Admindatabase == nil {
+			break
+		}
+
+		return e.complexity.Matrix.Admindatabase(childComplexity), true
 
 	case "Matrix._id":
 		if e.complexity.Matrix.ID == nil {
@@ -357,7 +365,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateAdmin(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(string), args["email"].(string), args["password"].(string), args["privilidge"].(bool)), true
+		return e.complexity.Mutation.UpdateAdmin(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(*string), args["email"].(*string), args["password"].(*string)), true
 
 	case "Mutation.updateBlock":
 		if e.complexity.Mutation.UpdateBlock == nil {
@@ -369,7 +377,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(string), args["prev"].(string), args["current"].(string)), true
+		return e.complexity.Mutation.UpdateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(*string), args["prev"].(string), args["current"].(string)), true
 
 	case "Mutation.updateMatrix":
 		if e.complexity.Mutation.UpdateMatrix == nil {
@@ -381,7 +389,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateMatrix(childComplexity, args["id"].(string), args["name"].(string)), true
+		return e.complexity.Mutation.UpdateMatrix(childComplexity, args["id"].(string), args["name"].(*string)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -393,7 +401,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(string), args["email"].(string), args["password"].(string), args["privilidge"].(bool)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(*string), args["email"].(*string), args["password"].(*string)), true
 
 	case "Query.admin":
 		if e.complexity.Query.Admin == nil {
@@ -915,42 +923,33 @@ func (ec *executionContext) field_Mutation_updateAdmin_args(ctx context.Context,
 		}
 	}
 	args["matrixID"] = arg1
-	var arg2 string
+	var arg2 *string
 	if tmp, ok := rawArgs["username"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["username"] = arg2
-	var arg3 string
+	var arg3 *string
 	if tmp, ok := rawArgs["email"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
+		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["email"] = arg3
-	var arg4 string
+	var arg4 *string
 	if tmp, ok := rawArgs["password"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["password"] = arg4
-	var arg5 bool
-	if tmp, ok := rawArgs["privilidge"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("privilidge"))
-		arg5, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["privilidge"] = arg5
 	return args, nil
 }
 
@@ -993,10 +992,10 @@ func (ec *executionContext) field_Mutation_updateBlock_args(ctx context.Context,
 		}
 	}
 	args["nounce"] = arg3
-	var arg4 string
+	var arg4 *string
 	if tmp, ok := rawArgs["data"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
-		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1035,10 +1034,10 @@ func (ec *executionContext) field_Mutation_updateMatrix_args(ctx context.Context
 		}
 	}
 	args["id"] = arg0
-	var arg1 string
+	var arg1 *string
 	if tmp, ok := rawArgs["name"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1068,42 +1067,33 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 		}
 	}
 	args["matrixID"] = arg1
-	var arg2 string
+	var arg2 *string
 	if tmp, ok := rawArgs["username"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
-		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["username"] = arg2
-	var arg3 string
+	var arg3 *string
 	if tmp, ok := rawArgs["email"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("email"))
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
+		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["email"] = arg3
-	var arg4 string
+	var arg4 *string
 	if tmp, ok := rawArgs["password"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["password"] = arg4
-	var arg5 bool
-	if tmp, ok := rawArgs["privilidge"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("privilidge"))
-		arg5, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["privilidge"] = arg5
 	return args, nil
 }
 
@@ -2004,6 +1994,50 @@ func (ec *executionContext) fieldContext_Matrix_userdatabase(ctx context.Context
 	return fc, nil
 }
 
+func (ec *executionContext) _Matrix_admindatabase(ctx context.Context, field graphql.CollectedField, obj *model.Matrix) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Matrix_admindatabase(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Admindatabase, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(interface{})
+	fc.Result = res
+	return ec.marshalNDatabaseLink2interface(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Matrix_admindatabase(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Matrix",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type DatabaseLink does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createUser(ctx, field)
 	if err != nil {
@@ -2089,7 +2123,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["email"].(string), fc.Args["password"].(string), fc.Args["privilidge"].(bool))
+		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(*string), fc.Args["email"].(*string), fc.Args["password"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2300,7 +2334,7 @@ func (ec *executionContext) _Mutation_updateAdmin(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateAdmin(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["email"].(string), fc.Args["password"].(string), fc.Args["privilidge"].(bool))
+		return ec.resolvers.Mutation().UpdateAdmin(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(*string), fc.Args["email"].(*string), fc.Args["password"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2402,6 +2436,8 @@ func (ec *executionContext) fieldContext_Mutation_createMatrix(ctx context.Conte
 				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
 			case "userdatabase":
 				return ec.fieldContext_Matrix_userdatabase(ctx, field)
+			case "admindatabase":
+				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -2434,7 +2470,7 @@ func (ec *executionContext) _Mutation_updateMatrix(ctx context.Context, field gr
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateMatrix(rctx, fc.Args["id"].(string), fc.Args["name"].(string))
+		return ec.resolvers.Mutation().UpdateMatrix(rctx, fc.Args["id"].(string), fc.Args["name"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2467,6 +2503,8 @@ func (ec *executionContext) fieldContext_Mutation_updateMatrix(ctx context.Conte
 				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
 			case "userdatabase":
 				return ec.fieldContext_Matrix_userdatabase(ctx, field)
+			case "admindatabase":
+				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -2532,6 +2570,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteMatrix(ctx context.Conte
 				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
 			case "userdatabase":
 				return ec.fieldContext_Matrix_userdatabase(ctx, field)
+			case "admindatabase":
+				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -2635,7 +2675,7 @@ func (ec *executionContext) _Mutation_updateBlock(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(string), fc.Args["prev"].(string), fc.Args["current"].(string))
+		return ec.resolvers.Mutation().UpdateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(*string), fc.Args["prev"].(string), fc.Args["current"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3010,6 +3050,8 @@ func (ec *executionContext) fieldContext_Query_Matrix(ctx context.Context, field
 				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
 			case "userdatabase":
 				return ec.fieldContext_Matrix_userdatabase(ctx, field)
+			case "admindatabase":
+				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -3075,6 +3117,8 @@ func (ec *executionContext) fieldContext_Query_Matrices(ctx context.Context, fie
 				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
 			case "userdatabase":
 				return ec.fieldContext_Matrix_userdatabase(ctx, field)
+			case "admindatabase":
+				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -5592,6 +5636,11 @@ func (ec *executionContext) _Matrix(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "userdatabase":
 			out.Values[i] = ec._Matrix_userdatabase(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "admindatabase":
+			out.Values[i] = ec._Matrix_admindatabase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}

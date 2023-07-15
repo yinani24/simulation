@@ -11,13 +11,15 @@ import (
 	"mat-back/graph/model"
 )
 
+var Mongo_db, errorMongo = database.ConnecttoMongoDB()
+var Post_sql, errorPost = database.ConnecttoPostSql("simulation")
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
 }
 
 // UpdateUser is the resolver for the updateUser field.
-func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID string, username string, email string, password string, privilidge bool) (*model.User, error) {
+func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: UpdateUser - updateUser"))
 }
 
@@ -32,7 +34,7 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, use
 }
 
 // UpdateAdmin is the resolver for the updateAdmin field.
-func (r *mutationResolver) UpdateAdmin(ctx context.Context, id string, matrixID string, username string, email string, password string, privilidge bool) (*model.Admin, error) {
+func (r *mutationResolver) UpdateAdmin(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.Admin, error) {
 	panic(fmt.Errorf("not implemented: UpdateAdmin - updateAdmin"))
 }
 
@@ -42,7 +44,7 @@ func (r *mutationResolver) CreateMatrix(ctx context.Context, name string) (*mode
 }
 
 // UpdateMatrix is the resolver for the updateMatrix field.
-func (r *mutationResolver) UpdateMatrix(ctx context.Context, id string, name string) (*model.Matrix, error) {
+func (r *mutationResolver) UpdateMatrix(ctx context.Context, id string, name *string) (*model.Matrix, error) {
 	panic(fmt.Errorf("not implemented: UpdateMatrix - updateMatrix"))
 }
 
@@ -57,7 +59,7 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 }
 
 // UpdateBlock is the resolver for the updateBlock field.
-func (r *mutationResolver) UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data string, prev string, current string) (*model.Block, error) {
+func (r *mutationResolver) UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data *string, prev string, current string) (*model.Block, error) {
 	panic(fmt.Errorf("not implemented: UpdateBlock - updateBlock"))
 }
 
@@ -116,5 +118,4 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
-var Mongo_db, errorMongo = database.ConnecttoMongoDB()
-var Post_sql, errorPost = database.ConnecttoPostSql()
+

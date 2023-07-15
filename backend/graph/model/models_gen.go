@@ -26,6 +26,7 @@ type Matrix struct {
 	Name          string      `json:"name"`
 	Mongodatabase interface{} `json:"mongodatabase"`
 	Userdatabase  interface{} `json:"userdatabase"`
+	Admindatabase interface{} `json:"admindatabase"`
 }
 
 type User struct {

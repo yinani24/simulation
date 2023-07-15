@@ -17,6 +17,7 @@ type Matrix{
   name: String!
   mongodatabase: DatabaseLink!
   userdatabase: DatabaseLink!
+  admindatabase: DatabaseLink!
 }
 
 type Admin{
@@ -50,18 +51,18 @@ type Query {
 
 type Mutation{
   createUser(matrixID:ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): User!
-  updateUser(id: ID!, matrixID: ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): User!
+  updateUser(id: ID!, matrixID: ID!, username: String, email: String, password: String): User!
   deleteUser(id: ID!, matrixID: ID!): User!
   
   createAdmin(matrixID:ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): Admin!
-  updateAdmin(id: ID!, matrixID:ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): Admin!
+  updateAdmin(id: ID!, matrixID:ID!, username: String, email: String, password: String): Admin!
   
   createMatrix(name: String!): Matrix!
-  updateMatrix(id: ID!, name: String!): Matrix! 
+  updateMatrix(id: ID!, name: String): Matrix! 
   deleteMatrix(id: ID!): Matrix!
   
   createBlock(userID: ID!, matrixID:ID!, num: Int!, nounce: Int!, data: String!, prev: String!, current: String!): Block!
-  updateBlock(userID: ID!, matrixID:ID!, num: Int!, nounce: Int!, data: String!, prev: String!, current: String!): Block!
+  updateBlock(userID: ID!, matrixID:ID!, num: Int!, nounce: Int!, data: String, prev: String!, current: String!): Block!
   deleteBlock(userID: ID!, matrixID:ID!, num: Int!): Block!
 }
 
