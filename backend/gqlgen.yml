@@ -87,4 +87,4 @@ models:
       - github.com/99designs/gqlgen/graphql.Int32
   DatabaseLink:
     model:
-      - mat-back/graph/model.DatabaseLink
+      - mat-back/graph.DatabaseLink

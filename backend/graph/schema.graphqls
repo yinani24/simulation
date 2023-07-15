@@ -1,7 +1,6 @@
 # GraphQL schema example
 #
 # https://gqlgen.com/getting-started/
-scalar DatabaseLink
 
 type User{
   _id: ID!
@@ -65,3 +64,5 @@ type Mutation{
   updateBlock(userID: ID!, matrixID:ID!, num: Int!, nounce: Int!, data: String!, prev: String!, current: String!): Block!
   deleteBlock(userID: ID!, matrixID:ID!, num: Int!): Block!
 }
+
+scalar DatabaseLink

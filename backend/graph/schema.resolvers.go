@@ -11,9 +11,6 @@ import (
 	"mat-back/graph/model"
 )
 
-var Mongo_db, errorMongo = database.ConnecttoMongoDB()
-var Post_sql, errorPost = database.ConnecttoPostSql()
-
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.User, error) {
 	panic(fmt.Errorf("not implemented: CreateUser - createUser"))
@@ -119,4 +116,5 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
-
+var Mongo_db, errorMongo = database.ConnecttoMongoDB()
+var Post_sql, errorPost = database.ConnecttoPostSql()

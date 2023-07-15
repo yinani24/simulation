@@ -134,5 +134,6 @@ func createMatrix(post * PostSql, Mongo * MongoDB, M string) *model.Matrix{
 	}
 }
 
+func UpdateMatrix()
 
 
