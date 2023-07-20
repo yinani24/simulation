@@ -17,7 +17,7 @@ import (
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	// "go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo/options"
+	//"go.mongodb.org/mongo-driver/mongo/options"
 )
 
 var mutex = &sync.Mutex{}
@@ -283,7 +283,7 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 		log.Fatal(err)
 	}
 	/*
-		Insert it into all the current transactions waiting to be mined by peers and hence being verified
+	Insert it into all the current transactions waiting to be mined by peers and hence being verified
 	*/
 	currentblock := Mongo_db.Client.Database(matrix.Name).Collection("CurrentBlock")
 	currentTransaction := model.CurrentTransaction{
@@ -298,8 +298,12 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	}
 
 	/*
-	All the transactions that needs to be 
+	All the transactions that needs to be updated on blocks left to mine by the peers
+	Need to complete the how of mining the block maybe will need to form a new 
+	type that allows for mining and then the value is compared
+	when more than 50% is reached then the mining is done and the block is added to the blockchain
 	*/
+	
 
 	return &returnBlock, nil
 }
@@ -315,22 +319,22 @@ func (r *mutationResolver) UpdateBlock(ctx context.Context, userID string, matri
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
-	updateBlockInfo := bson.M{}
+	filter := bson.M{"_num": num}
+	update := bson.M{"$set": bson.M{"data": data}}
 
-	if data {
-		updateBlockInfo["data"] = *data
+	result, error_up := client.UpdateOne(ctx, filter, update)
+
+	if error_up != nil {
+		log.Fatal(error_up)
 	}
 
-	// _id, _ := primitive.ObjectIDFromHex(jobId)
-	filter := bson.M{"_num": num}
-	update := bson.M{"$set": updateBlockInfo}
-
-	results := client.FindOneAndUpdate(ctx, filter, update, options.FindOneAndUpdate().SetReturnDocument(1))
+	if result.ModifiedCount == 0 {
+		return nil, fmt.Errorf("no matching block found for update")
+	}
 
 	var block model.Block
-
-	if err := results.Decode(&block); err != nil {
-		log.Fatal(err)
+	if err := client.FindOne(ctx, filter).Decode(&block); err != nil {
+		return nil, err
 	}
 
 	return &block, nil
