@@ -3,38 +3,58 @@
 package model
 
 type Admin struct {
-	ID         string `json:"_id"`
-	MatrixID   string `json:"matrixID"`
-	Username   string `json:"username"`
-	Email      string `json:"email"`
-	Password   string `json:"password"`
-	Privilidge bool   `json:"privilidge"`
+	ID            string  `json:"_id"`
+	MatrixID      string  `json:"matrixID"`
+	Username      string  `json:"username"`
+	Email         string  `json:"email"`
+	Password      string  `json:"password"`
+	Privilidge    bool    `json:"privilidge"`
+	ReleaseFlow   float64 `json:"releaseFlow"`
+	TotalCurrency float64 `json:"totalCurrency"`
+	SetRate       float64 `json:"setRate"`
 }
 
 type Block struct {
-	Num      int    `json:"_num"`
-	MatrixID string `json:"matrixID"`
-	UserID   string `json:"userID"`
-	Nounce   int    `json:"nounce"`
-	Data     string `json:"data"`
-	Prev     string `json:"prev"`
-	Current  string `json:"current"`
+	Num      int    `json:"_num"  bson:"_num,omitonly"`
+	MatrixID string `json:"matrixID" bson:"matrixID"`
+	UserID   string `json:"userID" bson:"userID"`
+	Nounce   int    `json:"nounce" bson:"nounce"`
+	Data     *Data  `json:"data" bson:"data"`
+	Prev     string `json:"prev" bson:"prev"`
+	Current  string `json:"current" bson:"current"`
+	Verify   bool   `json:"verify" bson:"verify"`
+}
+
+type CurrentTransaction struct {
+	Block   *Block  `json:"block"`
+	Percent float64 `json:"percent"`
+	Status  bool    `json:"status"`
+}
+
+type Data struct {
+	From   string  `json:"from" bson:"from"`
+	To     string  `json:"to" bson:"to"`
+	Amount float64 `json:"amount" bson:"amount"`
+}
+
+type DataType struct {
+	From   string  `json:"from"`
+	To     string  `json:"to"`
+	Amount float64 `json:"amount"`
 }
 
 type Matrix struct {
-	ID            string      `json:"_id"`
-	Name          string      `json:"name"`
-	Mongodatabase interface{} `json:"mongodatabase"`
-	Userdatabase  interface{} `json:"userdatabase"`
-	Admindatabase interface{} `json:"admindatabase"`
+	ID   string `json:"_id"`
+	Name string `json:"name"`
 }
 
 type User struct {
-	ID                string      `json:"_id"`
-	MatrixID          string      `json:"matrixID"`
-	Username          string      `json:"username"`
-	Email             string      `json:"email"`
-	Password          string      `json:"password"`
-	CurrentBalance    float64     `json:"current_balance"`
-	Usermongodatabase interface{} `json:"usermongodatabase"`
+	ID             string  `json:"_id"`
+	MatrixID       string  `json:"matrixID"`
+	Username       string  `json:"username"`
+	Email          string  `json:"email"`
+	Password       string  `json:"password"`
+	CurrentBalance float64 `json:"current_balance"`
+	PrivateKey     string  `json:"privateKey"`
+	PublicKey      string  `json:"publicKey"`
 }

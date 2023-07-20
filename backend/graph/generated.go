@@ -46,12 +46,15 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Admin struct {
-		Email      func(childComplexity int) int
-		ID         func(childComplexity int) int
-		MatrixID   func(childComplexity int) int
-		Password   func(childComplexity int) int
-		Privilidge func(childComplexity int) int
-		Username   func(childComplexity int) int
+		Email         func(childComplexity int) int
+		ID            func(childComplexity int) int
+		MatrixID      func(childComplexity int) int
+		Password      func(childComplexity int) int
+		Privilidge    func(childComplexity int) int
+		ReleaseFlow   func(childComplexity int) int
+		SetRate       func(childComplexity int) int
+		TotalCurrency func(childComplexity int) int
+		Username      func(childComplexity int) int
 	}
 
 	Block struct {
@@ -62,72 +65,95 @@ type ComplexityRoot struct {
 		Num      func(childComplexity int) int
 		Prev     func(childComplexity int) int
 		UserID   func(childComplexity int) int
+		Verify   func(childComplexity int) int
+	}
+
+	CurrentTransaction struct {
+		Block   func(childComplexity int) int
+		Percent func(childComplexity int) int
+		Status  func(childComplexity int) int
+	}
+
+	Data struct {
+		Amount func(childComplexity int) int
+		From   func(childComplexity int) int
+		To     func(childComplexity int) int
 	}
 
 	Matrix struct {
-		Admindatabase func(childComplexity int) int
-		ID            func(childComplexity int) int
-		Mongodatabase func(childComplexity int) int
-		Name          func(childComplexity int) int
-		Userdatabase  func(childComplexity int) int
+		ID   func(childComplexity int) int
+		Name func(childComplexity int) int
 	}
 
 	Mutation struct {
 		CreateAdmin  func(childComplexity int, matrixID string, username string, email string, password string, privilidge bool) int
-		CreateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data string, prev string, current string) int
+		CreateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data model.DataType, current string) int
 		CreateMatrix func(childComplexity int, name string) int
-		CreateUser   func(childComplexity int, matrixID string, username string, email string, password string, privilidge bool) int
+		CreateUser   func(childComplexity int, matrixID string, username string, email string, password string) int
 		DeleteBlock  func(childComplexity int, userID string, matrixID string, num int) int
 		DeleteMatrix func(childComplexity int, id string) int
 		DeleteUser   func(childComplexity int, id string, matrixID string) int
+		MineBlock    func(childComplexity int, userID string, matrixID string) int
 		UpdateAdmin  func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
-		UpdateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data *string, prev string, current string) int
+		UpdateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) int
 		UpdateMatrix func(childComplexity int, id string, name *string) int
-		UpdateUser   func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
+		UpdateRate   func(childComplexity int, id string, matrixID string) int
+		UpdateUser   func(childComplexity int, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) int
 	}
 
 	Query struct {
-		Admin    func(childComplexity int, id string, matrixID string) int
-		Block    func(childComplexity int, num int, matrixID string, userID string) int
-		Blocks   func(childComplexity int) int
-		Matrices func(childComplexity int) int
-		Matrix   func(childComplexity int, id string) int
-		User     func(childComplexity int, id string, matrixID string) int
-		Users    func(childComplexity int) int
+		Admin         func(childComplexity int, id string, matrixID string) int
+		Block         func(childComplexity int, num int, matrixID string, userID string) int
+		BlockChain    func(childComplexity int, matrixID string) int
+		Blocks        func(childComplexity int, matrixID string, userID string) int
+		BlocksToPrint func(childComplexity int, matrixID string, userID string, collection string) int
+		Matrices      func(childComplexity int) int
+		Matrix        func(childComplexity int, id string) int
+		User          func(childComplexity int, id string, matrixID string) int
+		Users         func(childComplexity int, matrixID string) int
+		VerifyAdmin   func(childComplexity int, id string, matrixID string, username string, password string, privilidge bool) int
+		VerifyUser    func(childComplexity int, id string, matrixID string, username string, password string) int
 	}
 
 	User struct {
-		CurrentBalance    func(childComplexity int) int
-		Email             func(childComplexity int) int
-		ID                func(childComplexity int) int
-		MatrixID          func(childComplexity int) int
-		Password          func(childComplexity int) int
-		Usermongodatabase func(childComplexity int) int
-		Username          func(childComplexity int) int
+		CurrentBalance func(childComplexity int) int
+		Email          func(childComplexity int) int
+		ID             func(childComplexity int) int
+		MatrixID       func(childComplexity int) int
+		Password       func(childComplexity int) int
+		PrivateKey     func(childComplexity int) int
+		PublicKey      func(childComplexity int) int
+		Username       func(childComplexity int) int
 	}
 }
 
 type MutationResolver interface {
-	CreateUser(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.User, error)
-	UpdateUser(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.User, error)
+	CreateUser(ctx context.Context, matrixID string, username string, email string, password string) (*model.User, error)
+	UpdateUser(ctx context.Context, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) (*model.User, error)
 	DeleteUser(ctx context.Context, id string, matrixID string) (*model.User, error)
 	CreateAdmin(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.Admin, error)
 	UpdateAdmin(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.Admin, error)
+	UpdateRate(ctx context.Context, id string, matrixID string) (*model.Admin, error)
 	CreateMatrix(ctx context.Context, name string) (*model.Matrix, error)
 	UpdateMatrix(ctx context.Context, id string, name *string) (*model.Matrix, error)
 	DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error)
-	CreateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data string, prev string, current string) (*model.Block, error)
-	UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data *string, prev string, current string) (*model.Block, error)
+	CreateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, current string) (*model.Block, error)
+	UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) (*model.Block, error)
 	DeleteBlock(ctx context.Context, userID string, matrixID string, num int) (*model.Block, error)
+	MineBlock(ctx context.Context, userID string, matrixID string) (bool, error)
 }
 type QueryResolver interface {
-	Users(ctx context.Context) ([]*model.User, error)
+	Users(ctx context.Context, matrixID string) ([]*model.User, error)
 	User(ctx context.Context, id string, matrixID string) (*model.User, error)
 	Admin(ctx context.Context, id string, matrixID string) (*model.Admin, error)
 	Matrix(ctx context.Context, id string) (*model.Matrix, error)
 	Matrices(ctx context.Context) ([]*model.Matrix, error)
-	Blocks(ctx context.Context) ([]*model.Block, error)
+	Blocks(ctx context.Context, matrixID string, userID string) ([]*model.Block, error)
 	Block(ctx context.Context, num int, matrixID string, userID string) (*model.Block, error)
+	BlocksToPrint(ctx context.Context, matrixID string, userID string, collection string) ([]*model.CurrentTransaction, error)
+	BlockChain(ctx context.Context, matrixID string) ([]*model.Block, error)
+	VerifyAdmin(ctx context.Context, id string, matrixID string, username string, password string, privilidge bool) (bool, error)
+	VerifyUser(ctx context.Context, id string, matrixID string, username string, password string) (bool, error)
 }
 
 type executableSchema struct {
@@ -179,6 +205,27 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Admin.Privilidge(childComplexity), true
+
+	case "Admin.releaseFlow":
+		if e.complexity.Admin.ReleaseFlow == nil {
+			break
+		}
+
+		return e.complexity.Admin.ReleaseFlow(childComplexity), true
+
+	case "Admin.setRate":
+		if e.complexity.Admin.SetRate == nil {
+			break
+		}
+
+		return e.complexity.Admin.SetRate(childComplexity), true
+
+	case "Admin.totalCurrency":
+		if e.complexity.Admin.TotalCurrency == nil {
+			break
+		}
+
+		return e.complexity.Admin.TotalCurrency(childComplexity), true
 
 	case "Admin.username":
 		if e.complexity.Admin.Username == nil {
@@ -236,12 +283,54 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Block.UserID(childComplexity), true
 
-	case "Matrix.admindatabase":
-		if e.complexity.Matrix.Admindatabase == nil {
+	case "Block.verify":
+		if e.complexity.Block.Verify == nil {
 			break
 		}
 
-		return e.complexity.Matrix.Admindatabase(childComplexity), true
+		return e.complexity.Block.Verify(childComplexity), true
+
+	case "CurrentTransaction.block":
+		if e.complexity.CurrentTransaction.Block == nil {
+			break
+		}
+
+		return e.complexity.CurrentTransaction.Block(childComplexity), true
+
+	case "CurrentTransaction.percent":
+		if e.complexity.CurrentTransaction.Percent == nil {
+			break
+		}
+
+		return e.complexity.CurrentTransaction.Percent(childComplexity), true
+
+	case "CurrentTransaction.status":
+		if e.complexity.CurrentTransaction.Status == nil {
+			break
+		}
+
+		return e.complexity.CurrentTransaction.Status(childComplexity), true
+
+	case "Data.amount":
+		if e.complexity.Data.Amount == nil {
+			break
+		}
+
+		return e.complexity.Data.Amount(childComplexity), true
+
+	case "Data.from":
+		if e.complexity.Data.From == nil {
+			break
+		}
+
+		return e.complexity.Data.From(childComplexity), true
+
+	case "Data.to":
+		if e.complexity.Data.To == nil {
+			break
+		}
+
+		return e.complexity.Data.To(childComplexity), true
 
 	case "Matrix._id":
 		if e.complexity.Matrix.ID == nil {
@@ -250,26 +339,12 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Matrix.ID(childComplexity), true
 
-	case "Matrix.mongodatabase":
-		if e.complexity.Matrix.Mongodatabase == nil {
-			break
-		}
-
-		return e.complexity.Matrix.Mongodatabase(childComplexity), true
-
 	case "Matrix.name":
 		if e.complexity.Matrix.Name == nil {
 			break
 		}
 
 		return e.complexity.Matrix.Name(childComplexity), true
-
-	case "Matrix.userdatabase":
-		if e.complexity.Matrix.Userdatabase == nil {
-			break
-		}
-
-		return e.complexity.Matrix.Userdatabase(childComplexity), true
 
 	case "Mutation.createAdmin":
 		if e.complexity.Mutation.CreateAdmin == nil {
@@ -293,7 +368,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(string), args["prev"].(string), args["current"].(string)), true
+		return e.complexity.Mutation.CreateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(model.DataType), args["current"].(string)), true
 
 	case "Mutation.createMatrix":
 		if e.complexity.Mutation.CreateMatrix == nil {
@@ -317,7 +392,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateUser(childComplexity, args["matrixID"].(string), args["username"].(string), args["email"].(string), args["password"].(string), args["privilidge"].(bool)), true
+		return e.complexity.Mutation.CreateUser(childComplexity, args["matrixID"].(string), args["username"].(string), args["email"].(string), args["password"].(string)), true
 
 	case "Mutation.deleteBlock":
 		if e.complexity.Mutation.DeleteBlock == nil {
@@ -355,6 +430,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.DeleteUser(childComplexity, args["id"].(string), args["matrixID"].(string)), true
 
+	case "Mutation.mineBlock":
+		if e.complexity.Mutation.MineBlock == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_mineBlock_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.MineBlock(childComplexity, args["userID"].(string), args["matrixID"].(string)), true
+
 	case "Mutation.updateAdmin":
 		if e.complexity.Mutation.UpdateAdmin == nil {
 			break
@@ -377,7 +464,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(*string), args["prev"].(string), args["current"].(string)), true
+		return e.complexity.Mutation.UpdateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(model.DataType), args["prev"].(string), args["current"].(string)), true
 
 	case "Mutation.updateMatrix":
 		if e.complexity.Mutation.UpdateMatrix == nil {
@@ -391,6 +478,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateMatrix(childComplexity, args["id"].(string), args["name"].(*string)), true
 
+	case "Mutation.updateRate":
+		if e.complexity.Mutation.UpdateRate == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateRate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateRate(childComplexity, args["id"].(string), args["matrixID"].(string)), true
+
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
 			break
@@ -401,7 +500,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(*string), args["email"].(*string), args["password"].(*string)), true
+		return e.complexity.Mutation.UpdateUser(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(*string), args["email"].(*string), args["password"].(*string), args["current_balance"].(*float64)), true
 
 	case "Query.admin":
 		if e.complexity.Query.Admin == nil {
@@ -413,7 +512,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Admin(childComplexity, args["id"].(string), args["matrixID"].(string)), true
+		return e.complexity.Query.Admin(childComplexity, args["_id"].(string), args["matrixID"].(string)), true
 
 	case "Query.Block":
 		if e.complexity.Query.Block == nil {
@@ -425,14 +524,43 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Block(childComplexity, args["num"].(int), args["matrixID"].(string), args["userID"].(string)), true
+		return e.complexity.Query.Block(childComplexity, args["_num"].(int), args["matrixID"].(string), args["userID"].(string)), true
+
+	case "Query.BlockChain":
+		if e.complexity.Query.BlockChain == nil {
+			break
+		}
+
+		args, err := ec.field_Query_BlockChain_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.BlockChain(childComplexity, args["matrixID"].(string)), true
 
 	case "Query.Blocks":
 		if e.complexity.Query.Blocks == nil {
 			break
 		}
 
-		return e.complexity.Query.Blocks(childComplexity), true
+		args, err := ec.field_Query_Blocks_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Blocks(childComplexity, args["matrixID"].(string), args["userID"].(string)), true
+
+	case "Query.BlocksToPrint":
+		if e.complexity.Query.BlocksToPrint == nil {
+			break
+		}
+
+		args, err := ec.field_Query_BlocksToPrint_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.BlocksToPrint(childComplexity, args["matrixID"].(string), args["userID"].(string), args["collection"].(string)), true
 
 	case "Query.Matrices":
 		if e.complexity.Query.Matrices == nil {
@@ -451,7 +579,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Matrix(childComplexity, args["id"].(string)), true
+		return e.complexity.Query.Matrix(childComplexity, args["_id"].(string)), true
 
 	case "Query.user":
 		if e.complexity.Query.User == nil {
@@ -463,14 +591,43 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.User(childComplexity, args["id"].(string), args["matrixID"].(string)), true
+		return e.complexity.Query.User(childComplexity, args["_id"].(string), args["matrixID"].(string)), true
 
 	case "Query.users":
 		if e.complexity.Query.Users == nil {
 			break
 		}
 
-		return e.complexity.Query.Users(childComplexity), true
+		args, err := ec.field_Query_users_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Users(childComplexity, args["matrixID"].(string)), true
+
+	case "Query.verifyAdmin":
+		if e.complexity.Query.VerifyAdmin == nil {
+			break
+		}
+
+		args, err := ec.field_Query_verifyAdmin_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.VerifyAdmin(childComplexity, args["_id"].(string), args["matrixID"].(string), args["username"].(string), args["password"].(string), args["privilidge"].(bool)), true
+
+	case "Query.verifyUser":
+		if e.complexity.Query.VerifyUser == nil {
+			break
+		}
+
+		args, err := ec.field_Query_verifyUser_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.VerifyUser(childComplexity, args["_id"].(string), args["matrixID"].(string), args["username"].(string), args["password"].(string)), true
 
 	case "User.current_balance":
 		if e.complexity.User.CurrentBalance == nil {
@@ -507,12 +664,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Password(childComplexity), true
 
-	case "User.usermongodatabase":
-		if e.complexity.User.Usermongodatabase == nil {
+	case "User.privateKey":
+		if e.complexity.User.PrivateKey == nil {
 			break
 		}
 
-		return e.complexity.User.Usermongodatabase(childComplexity), true
+		return e.complexity.User.PrivateKey(childComplexity), true
+
+	case "User.publicKey":
+		if e.complexity.User.PublicKey == nil {
+			break
+		}
+
+		return e.complexity.User.PublicKey(childComplexity), true
 
 	case "User.username":
 		if e.complexity.User.Username == nil {
@@ -528,7 +692,9 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
-	inputUnmarshalMap := graphql.BuildUnmarshalerMap()
+	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputDataType,
+	)
 	first := true
 
 	switch rc.Operation.Operation {
@@ -734,33 +900,24 @@ func (ec *executionContext) field_Mutation_createBlock_args(ctx context.Context,
 		}
 	}
 	args["nounce"] = arg3
-	var arg4 string
+	var arg4 model.DataType
 	if tmp, ok := rawArgs["data"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
-		arg4, err = ec.unmarshalNString2string(ctx, tmp)
+		arg4, err = ec.unmarshalNDataType2matᚑbackᚋgraphᚋmodelᚐDataType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["data"] = arg4
 	var arg5 string
-	if tmp, ok := rawArgs["prev"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("prev"))
+	if tmp, ok := rawArgs["current"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("current"))
 		arg5, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["prev"] = arg5
-	var arg6 string
-	if tmp, ok := rawArgs["current"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("current"))
-		arg6, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["current"] = arg6
+	args["current"] = arg5
 	return args, nil
 }
 
@@ -818,15 +975,6 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 		}
 	}
 	args["password"] = arg3
-	var arg4 bool
-	if tmp, ok := rawArgs["privilidge"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("privilidge"))
-		arg4, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["privilidge"] = arg4
 	return args, nil
 }
 
@@ -894,6 +1042,30 @@ func (ec *executionContext) field_Mutation_deleteUser_args(ctx context.Context, 
 	if tmp, ok := rawArgs["matrixID"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
 		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_mineBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["userID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -992,10 +1164,10 @@ func (ec *executionContext) field_Mutation_updateBlock_args(ctx context.Context,
 		}
 	}
 	args["nounce"] = arg3
-	var arg4 *string
+	var arg4 model.DataType
 	if tmp, ok := rawArgs["data"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
-		arg4, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		arg4, err = ec.unmarshalNDataType2matᚑbackᚋgraphᚋmodelᚐDataType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1043,6 +1215,30 @@ func (ec *executionContext) field_Mutation_updateMatrix_args(ctx context.Context
 		}
 	}
 	args["name"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateRate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg1
 	return args, nil
 }
 
@@ -1094,6 +1290,30 @@ func (ec *executionContext) field_Mutation_updateUser_args(ctx context.Context, 
 		}
 	}
 	args["password"] = arg4
+	var arg5 *float64
+	if tmp, ok := rawArgs["current_balance"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("current_balance"))
+		arg5, err = ec.unmarshalOFloat2ᚖfloat64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["current_balance"] = arg5
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_BlockChain_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg0
 	return args, nil
 }
 
@@ -1101,14 +1321,14 @@ func (ec *executionContext) field_Query_Block_args(ctx context.Context, rawArgs 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int
-	if tmp, ok := rawArgs["num"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("num"))
+	if tmp, ok := rawArgs["_num"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_num"))
 		arg0, err = ec.unmarshalNInt2int(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["num"] = arg0
+	args["_num"] = arg0
 	var arg1 string
 	if tmp, ok := rawArgs["matrixID"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
@@ -1130,18 +1350,75 @@ func (ec *executionContext) field_Query_Block_args(ctx context.Context, rawArgs 
 	return args, nil
 }
 
-func (ec *executionContext) field_Query_Matrix_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Query_BlocksToPrint_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["matrixID"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["userID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["collection"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("collection"))
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["collection"] = arg2
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_Blocks_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["userID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["userID"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_Matrix_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["_id"] = arg0
 	return args, nil
 }
 
@@ -1164,14 +1441,14 @@ func (ec *executionContext) field_Query_admin_args(ctx context.Context, rawArgs 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_id"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["_id"] = arg0
 	var arg1 string
 	if tmp, ok := rawArgs["matrixID"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
@@ -1188,14 +1465,14 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_id"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["_id"] = arg0
 	var arg1 string
 	if tmp, ok := rawArgs["matrixID"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
@@ -1205,6 +1482,114 @@ func (ec *executionContext) field_Query_user_args(ctx context.Context, rawArgs m
 		}
 	}
 	args["matrixID"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_users_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_verifyAdmin_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["username"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["username"] = arg2
+	var arg3 string
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg3, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg3
+	var arg4 bool
+	if tmp, ok := rawArgs["privilidge"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("privilidge"))
+		arg4, err = ec.unmarshalNBoolean2bool(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["privilidge"] = arg4
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_verifyUser_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_id"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["_id"] = arg0
+	var arg1 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg1
+	var arg2 string
+	if tmp, ok := rawArgs["username"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+		arg2, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["username"] = arg2
+	var arg3 string
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
+		arg3, err = ec.unmarshalNString2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["password"] = arg3
 	return args, nil
 }
 
@@ -1510,6 +1895,138 @@ func (ec *executionContext) fieldContext_Admin_privilidge(ctx context.Context, f
 	return fc, nil
 }
 
+func (ec *executionContext) _Admin_releaseFlow(ctx context.Context, field graphql.CollectedField, obj *model.Admin) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Admin_releaseFlow(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ReleaseFlow, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Admin_releaseFlow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Admin",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Admin_totalCurrency(ctx context.Context, field graphql.CollectedField, obj *model.Admin) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Admin_totalCurrency(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.TotalCurrency, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Admin_totalCurrency(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Admin",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Admin_setRate(ctx context.Context, field graphql.CollectedField, obj *model.Admin) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Admin_setRate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.SetRate, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Admin_setRate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Admin",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Block__num(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Block__num(ctx, field)
 	if err != nil {
@@ -1712,9 +2229,9 @@ func (ec *executionContext) _Block_data(ctx context.Context, field graphql.Colle
 		}
 		return graphql.Null
 	}
-	res := resTmp.(string)
+	res := resTmp.(*model.Data)
 	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
+	return ec.marshalNData2ᚖmatᚑbackᚋgraphᚋmodelᚐData(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Block_data(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -1724,7 +2241,15 @@ func (ec *executionContext) fieldContext_Block_data(ctx context.Context, field g
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
+			switch field.Name {
+			case "from":
+				return ec.fieldContext_Data_from(ctx, field)
+			case "to":
+				return ec.fieldContext_Data_to(ctx, field)
+			case "amount":
+				return ec.fieldContext_Data_amount(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Data", field.Name)
 		},
 	}
 	return fc, nil
@@ -1818,6 +2343,332 @@ func (ec *executionContext) fieldContext_Block_current(ctx context.Context, fiel
 	return fc, nil
 }
 
+func (ec *executionContext) _Block_verify(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Block_verify(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Verify, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Block_verify(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Block",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CurrentTransaction_block(ctx context.Context, field graphql.CollectedField, obj *model.CurrentTransaction) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CurrentTransaction_block(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Block, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Block)
+	fc.Result = res
+	return ec.marshalNBlock2ᚖmatᚑbackᚋgraphᚋmodelᚐBlock(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CurrentTransaction_block(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CurrentTransaction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_num":
+				return ec.fieldContext_Block__num(ctx, field)
+			case "matrixID":
+				return ec.fieldContext_Block_matrixID(ctx, field)
+			case "userID":
+				return ec.fieldContext_Block_userID(ctx, field)
+			case "nounce":
+				return ec.fieldContext_Block_nounce(ctx, field)
+			case "data":
+				return ec.fieldContext_Block_data(ctx, field)
+			case "prev":
+				return ec.fieldContext_Block_prev(ctx, field)
+			case "current":
+				return ec.fieldContext_Block_current(ctx, field)
+			case "verify":
+				return ec.fieldContext_Block_verify(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CurrentTransaction_percent(ctx context.Context, field graphql.CollectedField, obj *model.CurrentTransaction) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CurrentTransaction_percent(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Percent, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CurrentTransaction_percent(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CurrentTransaction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _CurrentTransaction_status(ctx context.Context, field graphql.CollectedField, obj *model.CurrentTransaction) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_CurrentTransaction_status(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Status, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_CurrentTransaction_status(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "CurrentTransaction",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Data_from(ctx context.Context, field graphql.CollectedField, obj *model.Data) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Data_from(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.From, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Data_from(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Data",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Data_to(ctx context.Context, field graphql.CollectedField, obj *model.Data) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Data_to(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.To, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Data_to(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Data",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Data_amount(ctx context.Context, field graphql.CollectedField, obj *model.Data) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Data_amount(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Amount, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Data_amount(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Data",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Matrix__id(ctx context.Context, field graphql.CollectedField, obj *model.Matrix) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Matrix__id(ctx, field)
 	if err != nil {
@@ -1906,138 +2757,6 @@ func (ec *executionContext) fieldContext_Matrix_name(ctx context.Context, field 
 	return fc, nil
 }
 
-func (ec *executionContext) _Matrix_mongodatabase(ctx context.Context, field graphql.CollectedField, obj *model.Matrix) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Matrix_mongodatabase(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Mongodatabase, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(interface{})
-	fc.Result = res
-	return ec.marshalNDatabaseLink2interface(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Matrix_mongodatabase(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Matrix",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DatabaseLink does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Matrix_userdatabase(ctx context.Context, field graphql.CollectedField, obj *model.Matrix) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Matrix_userdatabase(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Userdatabase, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(interface{})
-	fc.Result = res
-	return ec.marshalNDatabaseLink2interface(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Matrix_userdatabase(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Matrix",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DatabaseLink does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Matrix_admindatabase(ctx context.Context, field graphql.CollectedField, obj *model.Matrix) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Matrix_admindatabase(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.Admindatabase, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(interface{})
-	fc.Result = res
-	return ec.marshalNDatabaseLink2interface(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Matrix_admindatabase(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Matrix",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DatabaseLink does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_createUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_createUser(ctx, field)
 	if err != nil {
@@ -2052,7 +2771,7 @@ func (ec *executionContext) _Mutation_createUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["email"].(string), fc.Args["password"].(string), fc.Args["privilidge"].(bool))
+		return ec.resolvers.Mutation().CreateUser(rctx, fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2089,8 +2808,10 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "usermongodatabase":
-				return ec.fieldContext_User_usermongodatabase(ctx, field)
+			case "privateKey":
+				return ec.fieldContext_User_privateKey(ctx, field)
+			case "publicKey":
+				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2123,7 +2844,7 @@ func (ec *executionContext) _Mutation_updateUser(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(*string), fc.Args["email"].(*string), fc.Args["password"].(*string))
+		return ec.resolvers.Mutation().UpdateUser(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(*string), fc.Args["email"].(*string), fc.Args["password"].(*string), fc.Args["current_balance"].(*float64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2160,8 +2881,10 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "usermongodatabase":
-				return ec.fieldContext_User_usermongodatabase(ctx, field)
+			case "privateKey":
+				return ec.fieldContext_User_privateKey(ctx, field)
+			case "publicKey":
+				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2231,8 +2954,10 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "usermongodatabase":
-				return ec.fieldContext_User_usermongodatabase(ctx, field)
+			case "privateKey":
+				return ec.fieldContext_User_privateKey(ctx, field)
+			case "publicKey":
+				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2302,6 +3027,12 @@ func (ec *executionContext) fieldContext_Mutation_createAdmin(ctx context.Contex
 				return ec.fieldContext_Admin_password(ctx, field)
 			case "privilidge":
 				return ec.fieldContext_Admin_privilidge(ctx, field)
+			case "releaseFlow":
+				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "totalCurrency":
+				return ec.fieldContext_Admin_totalCurrency(ctx, field)
+			case "setRate":
+				return ec.fieldContext_Admin_setRate(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Admin", field.Name)
 		},
@@ -2371,6 +3102,12 @@ func (ec *executionContext) fieldContext_Mutation_updateAdmin(ctx context.Contex
 				return ec.fieldContext_Admin_password(ctx, field)
 			case "privilidge":
 				return ec.fieldContext_Admin_privilidge(ctx, field)
+			case "releaseFlow":
+				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "totalCurrency":
+				return ec.fieldContext_Admin_totalCurrency(ctx, field)
+			case "setRate":
+				return ec.fieldContext_Admin_setRate(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Admin", field.Name)
 		},
@@ -2383,6 +3120,81 @@ func (ec *executionContext) fieldContext_Mutation_updateAdmin(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_updateAdmin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateRate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateRate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateRate(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Admin)
+	fc.Result = res
+	return ec.marshalNAdmin2ᚖmatᚑbackᚋgraphᚋmodelᚐAdmin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateRate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Admin__id(ctx, field)
+			case "matrixID":
+				return ec.fieldContext_Admin_matrixID(ctx, field)
+			case "username":
+				return ec.fieldContext_Admin_username(ctx, field)
+			case "email":
+				return ec.fieldContext_Admin_email(ctx, field)
+			case "password":
+				return ec.fieldContext_Admin_password(ctx, field)
+			case "privilidge":
+				return ec.fieldContext_Admin_privilidge(ctx, field)
+			case "releaseFlow":
+				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "totalCurrency":
+				return ec.fieldContext_Admin_totalCurrency(ctx, field)
+			case "setRate":
+				return ec.fieldContext_Admin_setRate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Admin", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateRate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2432,12 +3244,6 @@ func (ec *executionContext) fieldContext_Mutation_createMatrix(ctx context.Conte
 				return ec.fieldContext_Matrix__id(ctx, field)
 			case "name":
 				return ec.fieldContext_Matrix_name(ctx, field)
-			case "mongodatabase":
-				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
-			case "userdatabase":
-				return ec.fieldContext_Matrix_userdatabase(ctx, field)
-			case "admindatabase":
-				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -2499,12 +3305,6 @@ func (ec *executionContext) fieldContext_Mutation_updateMatrix(ctx context.Conte
 				return ec.fieldContext_Matrix__id(ctx, field)
 			case "name":
 				return ec.fieldContext_Matrix_name(ctx, field)
-			case "mongodatabase":
-				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
-			case "userdatabase":
-				return ec.fieldContext_Matrix_userdatabase(ctx, field)
-			case "admindatabase":
-				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -2566,12 +3366,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteMatrix(ctx context.Conte
 				return ec.fieldContext_Matrix__id(ctx, field)
 			case "name":
 				return ec.fieldContext_Matrix_name(ctx, field)
-			case "mongodatabase":
-				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
-			case "userdatabase":
-				return ec.fieldContext_Matrix_userdatabase(ctx, field)
-			case "admindatabase":
-				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -2604,7 +3398,7 @@ func (ec *executionContext) _Mutation_createBlock(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(string), fc.Args["prev"].(string), fc.Args["current"].(string))
+		return ec.resolvers.Mutation().CreateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(model.DataType), fc.Args["current"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2643,6 +3437,8 @@ func (ec *executionContext) fieldContext_Mutation_createBlock(ctx context.Contex
 				return ec.fieldContext_Block_prev(ctx, field)
 			case "current":
 				return ec.fieldContext_Block_current(ctx, field)
+			case "verify":
+				return ec.fieldContext_Block_verify(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
 		},
@@ -2675,7 +3471,7 @@ func (ec *executionContext) _Mutation_updateBlock(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(*string), fc.Args["prev"].(string), fc.Args["current"].(string))
+		return ec.resolvers.Mutation().UpdateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(model.DataType), fc.Args["prev"].(string), fc.Args["current"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2714,6 +3510,8 @@ func (ec *executionContext) fieldContext_Mutation_updateBlock(ctx context.Contex
 				return ec.fieldContext_Block_prev(ctx, field)
 			case "current":
 				return ec.fieldContext_Block_current(ctx, field)
+			case "verify":
+				return ec.fieldContext_Block_verify(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
 		},
@@ -2785,6 +3583,8 @@ func (ec *executionContext) fieldContext_Mutation_deleteBlock(ctx context.Contex
 				return ec.fieldContext_Block_prev(ctx, field)
 			case "current":
 				return ec.fieldContext_Block_current(ctx, field)
+			case "verify":
+				return ec.fieldContext_Block_verify(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
 		},
@@ -2797,6 +3597,61 @@ func (ec *executionContext) fieldContext_Mutation_deleteBlock(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_deleteBlock_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_mineBlock(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_mineBlock(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().MineBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_mineBlock(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_mineBlock_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -2817,7 +3672,7 @@ func (ec *executionContext) _Query_users(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Users(rctx)
+		return ec.resolvers.Query().Users(rctx, fc.Args["matrixID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2854,11 +3709,24 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "usermongodatabase":
-				return ec.fieldContext_User_usermongodatabase(ctx, field)
+			case "privateKey":
+				return ec.fieldContext_User_privateKey(ctx, field)
+			case "publicKey":
+				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_users_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -2877,7 +3745,7 @@ func (ec *executionContext) _Query_user(ctx context.Context, field graphql.Colle
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().User(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string))
+		return ec.resolvers.Query().User(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2914,8 +3782,10 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "usermongodatabase":
-				return ec.fieldContext_User_usermongodatabase(ctx, field)
+			case "privateKey":
+				return ec.fieldContext_User_privateKey(ctx, field)
+			case "publicKey":
+				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2948,7 +3818,7 @@ func (ec *executionContext) _Query_admin(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Admin(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string))
+		return ec.resolvers.Query().Admin(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2985,6 +3855,12 @@ func (ec *executionContext) fieldContext_Query_admin(ctx context.Context, field 
 				return ec.fieldContext_Admin_password(ctx, field)
 			case "privilidge":
 				return ec.fieldContext_Admin_privilidge(ctx, field)
+			case "releaseFlow":
+				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "totalCurrency":
+				return ec.fieldContext_Admin_totalCurrency(ctx, field)
+			case "setRate":
+				return ec.fieldContext_Admin_setRate(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Admin", field.Name)
 		},
@@ -3017,7 +3893,7 @@ func (ec *executionContext) _Query_Matrix(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Matrix(rctx, fc.Args["id"].(string))
+		return ec.resolvers.Query().Matrix(rctx, fc.Args["_id"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3046,12 +3922,6 @@ func (ec *executionContext) fieldContext_Query_Matrix(ctx context.Context, field
 				return ec.fieldContext_Matrix__id(ctx, field)
 			case "name":
 				return ec.fieldContext_Matrix_name(ctx, field)
-			case "mongodatabase":
-				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
-			case "userdatabase":
-				return ec.fieldContext_Matrix_userdatabase(ctx, field)
-			case "admindatabase":
-				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -3113,12 +3983,6 @@ func (ec *executionContext) fieldContext_Query_Matrices(ctx context.Context, fie
 				return ec.fieldContext_Matrix__id(ctx, field)
 			case "name":
 				return ec.fieldContext_Matrix_name(ctx, field)
-			case "mongodatabase":
-				return ec.fieldContext_Matrix_mongodatabase(ctx, field)
-			case "userdatabase":
-				return ec.fieldContext_Matrix_userdatabase(ctx, field)
-			case "admindatabase":
-				return ec.fieldContext_Matrix_admindatabase(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
 		},
@@ -3140,7 +4004,7 @@ func (ec *executionContext) _Query_Blocks(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Blocks(rctx)
+		return ec.resolvers.Query().Blocks(rctx, fc.Args["matrixID"].(string), fc.Args["userID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3154,7 +4018,7 @@ func (ec *executionContext) _Query_Blocks(ctx context.Context, field graphql.Col
 	}
 	res := resTmp.([]*model.Block)
 	fc.Result = res
-	return ec.marshalNBlock2ᚕᚖmatᚑbackᚋgraphᚋmodelᚐBlockᚄ(ctx, field.Selections, res)
+	return ec.marshalNBlock2ᚕᚖmatᚑbackᚋgraphᚋmodelᚐBlock(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_Blocks(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -3179,9 +4043,22 @@ func (ec *executionContext) fieldContext_Query_Blocks(ctx context.Context, field
 				return ec.fieldContext_Block_prev(ctx, field)
 			case "current":
 				return ec.fieldContext_Block_current(ctx, field)
+			case "verify":
+				return ec.fieldContext_Block_verify(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
 		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_Blocks_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
 	}
 	return fc, nil
 }
@@ -3200,7 +4077,7 @@ func (ec *executionContext) _Query_Block(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Block(rctx, fc.Args["num"].(int), fc.Args["matrixID"].(string), fc.Args["userID"].(string))
+		return ec.resolvers.Query().Block(rctx, fc.Args["_num"].(int), fc.Args["matrixID"].(string), fc.Args["userID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3239,6 +4116,8 @@ func (ec *executionContext) fieldContext_Query_Block(ctx context.Context, field 
 				return ec.fieldContext_Block_prev(ctx, field)
 			case "current":
 				return ec.fieldContext_Block_current(ctx, field)
+			case "verify":
+				return ec.fieldContext_Block_verify(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
 		},
@@ -3251,6 +4130,252 @@ func (ec *executionContext) fieldContext_Query_Block(ctx context.Context, field 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_Block_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_BlocksToPrint(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_BlocksToPrint(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().BlocksToPrint(rctx, fc.Args["matrixID"].(string), fc.Args["userID"].(string), fc.Args["collection"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.CurrentTransaction)
+	fc.Result = res
+	return ec.marshalNCurrentTransaction2ᚕᚖmatᚑbackᚋgraphᚋmodelᚐCurrentTransaction(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_BlocksToPrint(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "block":
+				return ec.fieldContext_CurrentTransaction_block(ctx, field)
+			case "percent":
+				return ec.fieldContext_CurrentTransaction_percent(ctx, field)
+			case "status":
+				return ec.fieldContext_CurrentTransaction_status(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type CurrentTransaction", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_BlocksToPrint_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_BlockChain(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_BlockChain(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().BlockChain(rctx, fc.Args["matrixID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*model.Block)
+	fc.Result = res
+	return ec.marshalNBlock2ᚕᚖmatᚑbackᚋgraphᚋmodelᚐBlockᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_BlockChain(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_num":
+				return ec.fieldContext_Block__num(ctx, field)
+			case "matrixID":
+				return ec.fieldContext_Block_matrixID(ctx, field)
+			case "userID":
+				return ec.fieldContext_Block_userID(ctx, field)
+			case "nounce":
+				return ec.fieldContext_Block_nounce(ctx, field)
+			case "data":
+				return ec.fieldContext_Block_data(ctx, field)
+			case "prev":
+				return ec.fieldContext_Block_prev(ctx, field)
+			case "current":
+				return ec.fieldContext_Block_current(ctx, field)
+			case "verify":
+				return ec.fieldContext_Block_verify(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_BlockChain_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_verifyAdmin(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_verifyAdmin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().VerifyAdmin(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string), fc.Args["privilidge"].(bool))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_verifyAdmin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_verifyAdmin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_verifyUser(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_verifyUser(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().VerifyUser(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_verifyUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_verifyUser_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3650,8 +4775,8 @@ func (ec *executionContext) fieldContext_User_current_balance(ctx context.Contex
 	return fc, nil
 }
 
-func (ec *executionContext) _User_usermongodatabase(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_usermongodatabase(ctx, field)
+func (ec *executionContext) _User_privateKey(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_privateKey(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -3664,7 +4789,7 @@ func (ec *executionContext) _User_usermongodatabase(ctx context.Context, field g
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.Usermongodatabase, nil
+		return obj.PrivateKey, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3676,19 +4801,63 @@ func (ec *executionContext) _User_usermongodatabase(ctx context.Context, field g
 		}
 		return graphql.Null
 	}
-	res := resTmp.(interface{})
+	res := resTmp.(string)
 	fc.Result = res
-	return ec.marshalNDatabaseLink2interface(ctx, field.Selections, res)
+	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_User_usermongodatabase(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_User_privateKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "User",
 		Field:      field,
 		IsMethod:   false,
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type DatabaseLink does not have child fields")
+			return nil, errors.New("field of type String does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _User_publicKey(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_User_publicKey(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.PublicKey, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNString2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_User_publicKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "User",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -5467,6 +6636,53 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputDataType(ctx context.Context, obj interface{}) (model.DataType, error) {
+	var it model.DataType
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"from", "to", "amount"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "from":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("from"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.From = data
+		case "to":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("to"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.To = data
+		case "amount":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("amount"))
+			data, err := ec.unmarshalNFloat2float64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Amount = data
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -5513,6 +6729,21 @@ func (ec *executionContext) _Admin(ctx context.Context, sel ast.SelectionSet, ob
 			}
 		case "privilidge":
 			out.Values[i] = ec._Admin_privilidge(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "releaseFlow":
+			out.Values[i] = ec._Admin_releaseFlow(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "totalCurrency":
+			out.Values[i] = ec._Admin_totalCurrency(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "setRate":
+			out.Values[i] = ec._Admin_setRate(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5585,6 +6816,109 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "verify":
+			out.Values[i] = ec._Block_verify(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var currentTransactionImplementors = []string{"CurrentTransaction"}
+
+func (ec *executionContext) _CurrentTransaction(ctx context.Context, sel ast.SelectionSet, obj *model.CurrentTransaction) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, currentTransactionImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("CurrentTransaction")
+		case "block":
+			out.Values[i] = ec._CurrentTransaction_block(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "percent":
+			out.Values[i] = ec._CurrentTransaction_percent(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "status":
+			out.Values[i] = ec._CurrentTransaction_status(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var dataImplementors = []string{"Data"}
+
+func (ec *executionContext) _Data(ctx context.Context, sel ast.SelectionSet, obj *model.Data) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, dataImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Data")
+		case "from":
+			out.Values[i] = ec._Data_from(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "to":
+			out.Values[i] = ec._Data_to(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "amount":
+			out.Values[i] = ec._Data_amount(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -5626,21 +6960,6 @@ func (ec *executionContext) _Matrix(ctx context.Context, sel ast.SelectionSet, o
 			}
 		case "name":
 			out.Values[i] = ec._Matrix_name(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "mongodatabase":
-			out.Values[i] = ec._Matrix_mongodatabase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "userdatabase":
-			out.Values[i] = ec._Matrix_userdatabase(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "admindatabase":
-			out.Values[i] = ec._Matrix_admindatabase(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -5721,6 +7040,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateRate":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateRate(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "createMatrix":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createMatrix(ctx, field)
@@ -5759,6 +7085,13 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "deleteBlock":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteBlock(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "mineBlock":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_mineBlock(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -5959,6 +7292,94 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 			}
 
 			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "BlocksToPrint":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_BlocksToPrint(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "BlockChain":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_BlockChain(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "verifyAdmin":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_verifyAdmin(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "verifyUser":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_verifyUser(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
 		case "__type":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Query___type(ctx, field)
@@ -6031,8 +7452,13 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "usermongodatabase":
-			out.Values[i] = ec._User_usermongodatabase(ctx, field, obj)
+		case "privateKey":
+			out.Values[i] = ec._User_privateKey(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "publicKey":
+			out.Values[i] = ec._User_publicKey(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -6403,6 +7829,44 @@ func (ec *executionContext) marshalNBlock2matᚑbackᚋgraphᚋmodelᚐBlock(ctx
 	return ec._Block(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNBlock2ᚕᚖmatᚑbackᚋgraphᚋmodelᚐBlock(ctx context.Context, sel ast.SelectionSet, v []*model.Block) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOBlock2ᚖmatᚑbackᚋgraphᚋmodelᚐBlock(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
+}
+
 func (ec *executionContext) marshalNBlock2ᚕᚖmatᚑbackᚋgraphᚋmodelᚐBlockᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Block) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
@@ -6472,25 +7936,57 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) unmarshalNDatabaseLink2interface(ctx context.Context, v interface{}) (interface{}, error) {
-	res, err := UnmarshalDatabaseLink(v)
-	return res, graphql.ErrorOnPath(ctx, err)
+func (ec *executionContext) marshalNCurrentTransaction2ᚕᚖmatᚑbackᚋgraphᚋmodelᚐCurrentTransaction(ctx context.Context, sel ast.SelectionSet, v []*model.CurrentTransaction) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalOCurrentTransaction2ᚖmatᚑbackᚋgraphᚋmodelᚐCurrentTransaction(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	return ret
 }
 
-func (ec *executionContext) marshalNDatabaseLink2interface(ctx context.Context, sel ast.SelectionSet, v interface{}) graphql.Marshaler {
+func (ec *executionContext) marshalNData2ᚖmatᚑbackᚋgraphᚋmodelᚐData(ctx context.Context, sel ast.SelectionSet, v *model.Data) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
 		}
 		return graphql.Null
 	}
-	res := MarshalDatabaseLink(v)
-	if res == graphql.Null {
-		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
-			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
-		}
-	}
-	return res
+	return ec._Data(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalNDataType2matᚑbackᚋgraphᚋmodelᚐDataType(ctx context.Context, v interface{}) (model.DataType, error) {
+	res, err := ec.unmarshalInputDataType(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {
@@ -6922,6 +8418,13 @@ func (ec *executionContext) marshalN__TypeKind2string(ctx context.Context, sel a
 	return res
 }
 
+func (ec *executionContext) marshalOBlock2ᚖmatᚑbackᚋgraphᚋmodelᚐBlock(ctx context.Context, sel ast.SelectionSet, v *model.Block) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Block(ctx, sel, v)
+}
+
 func (ec *executionContext) unmarshalOBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -6946,6 +8449,29 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	}
 	res := graphql.MarshalBoolean(*v)
 	return res
+}
+
+func (ec *executionContext) marshalOCurrentTransaction2ᚖmatᚑbackᚋgraphᚋmodelᚐCurrentTransaction(ctx context.Context, sel ast.SelectionSet, v *model.CurrentTransaction) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._CurrentTransaction(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalFloatContext(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel ast.SelectionSet, v *float64) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalFloatContext(*v)
+	return graphql.WrapContextMarshaler(ctx, res)
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {
