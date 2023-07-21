@@ -93,7 +93,7 @@ type ComplexityRoot struct {
 		DeleteBlock  func(childComplexity int, userID string, matrixID string, num int) int
 		DeleteMatrix func(childComplexity int, id string) int
 		DeleteUser   func(childComplexity int, id string, matrixID string) int
-		MineBlock    func(childComplexity int, userID string, matrixID string) int
+		MineBlock    func(childComplexity int, userID string, matrixID string, block model.BlockType) int
 		UpdateAdmin  func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
 		UpdateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) int
 		UpdateMatrix func(childComplexity int, id string, name *string) int
@@ -121,8 +121,6 @@ type ComplexityRoot struct {
 		ID             func(childComplexity int) int
 		MatrixID       func(childComplexity int) int
 		Password       func(childComplexity int) int
-		PrivateKey     func(childComplexity int) int
-		PublicKey      func(childComplexity int) int
 		Username       func(childComplexity int) int
 	}
 }
@@ -140,7 +138,7 @@ type MutationResolver interface {
 	CreateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, current string) (*model.Block, error)
 	UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) (*model.Block, error)
 	DeleteBlock(ctx context.Context, userID string, matrixID string, num int) (*model.Block, error)
-	MineBlock(ctx context.Context, userID string, matrixID string) (bool, error)
+	MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType) (bool, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context, matrixID string) ([]*model.User, error)
@@ -440,7 +438,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.MineBlock(childComplexity, args["userID"].(string), args["matrixID"].(string)), true
+		return e.complexity.Mutation.MineBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["block"].(model.BlockType)), true
 
 	case "Mutation.updateAdmin":
 		if e.complexity.Mutation.UpdateAdmin == nil {
@@ -664,20 +662,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.User.Password(childComplexity), true
 
-	case "User.privateKey":
-		if e.complexity.User.PrivateKey == nil {
-			break
-		}
-
-		return e.complexity.User.PrivateKey(childComplexity), true
-
-	case "User.publicKey":
-		if e.complexity.User.PublicKey == nil {
-			break
-		}
-
-		return e.complexity.User.PublicKey(childComplexity), true
-
 	case "User.username":
 		if e.complexity.User.Username == nil {
 			break
@@ -693,6 +677,7 @@ func (e *executableSchema) Exec(ctx context.Context) graphql.ResponseHandler {
 	rc := graphql.GetOperationContext(ctx)
 	ec := executionContext{rc, e, 0, 0, make(chan graphql.DeferredResult)}
 	inputUnmarshalMap := graphql.BuildUnmarshalerMap(
+		ec.unmarshalInputBlockType,
 		ec.unmarshalInputDataType,
 	)
 	first := true
@@ -1056,7 +1041,7 @@ func (ec *executionContext) field_Mutation_mineBlock_args(ctx context.Context, r
 	var arg0 string
 	if tmp, ok := rawArgs["userID"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
-		arg0, err = ec.unmarshalNString2string(ctx, tmp)
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1065,12 +1050,21 @@ func (ec *executionContext) field_Mutation_mineBlock_args(ctx context.Context, r
 	var arg1 string
 	if tmp, ok := rawArgs["matrixID"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
-		arg1, err = ec.unmarshalNString2string(ctx, tmp)
+		arg1, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["matrixID"] = arg1
+	var arg2 model.BlockType
+	if tmp, ok := rawArgs["block"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("block"))
+		arg2, err = ec.unmarshalNBlockType2matᚑbackᚋgraphᚋmodelᚐBlockType(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["block"] = arg2
 	return args, nil
 }
 
@@ -2808,10 +2802,6 @@ func (ec *executionContext) fieldContext_Mutation_createUser(ctx context.Context
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "privateKey":
-				return ec.fieldContext_User_privateKey(ctx, field)
-			case "publicKey":
-				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2881,10 +2871,6 @@ func (ec *executionContext) fieldContext_Mutation_updateUser(ctx context.Context
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "privateKey":
-				return ec.fieldContext_User_privateKey(ctx, field)
-			case "publicKey":
-				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -2954,10 +2940,6 @@ func (ec *executionContext) fieldContext_Mutation_deleteUser(ctx context.Context
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "privateKey":
-				return ec.fieldContext_User_privateKey(ctx, field)
-			case "publicKey":
-				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3617,7 +3599,7 @@ func (ec *executionContext) _Mutation_mineBlock(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().MineBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string))
+		return ec.resolvers.Mutation().MineBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["block"].(model.BlockType))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3709,10 +3691,6 @@ func (ec *executionContext) fieldContext_Query_users(ctx context.Context, field 
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "privateKey":
-				return ec.fieldContext_User_privateKey(ctx, field)
-			case "publicKey":
-				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -3782,10 +3760,6 @@ func (ec *executionContext) fieldContext_Query_user(ctx context.Context, field g
 				return ec.fieldContext_User_password(ctx, field)
 			case "current_balance":
 				return ec.fieldContext_User_current_balance(ctx, field)
-			case "privateKey":
-				return ec.fieldContext_User_privateKey(ctx, field)
-			case "publicKey":
-				return ec.fieldContext_User_publicKey(ctx, field)
 			}
 			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
@@ -4770,94 +4744,6 @@ func (ec *executionContext) fieldContext_User_current_balance(ctx context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_privateKey(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_privateKey(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PrivateKey, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_privateKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
-		},
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _User_publicKey(ctx context.Context, field graphql.CollectedField, obj *model.User) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_User_publicKey(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return obj.PublicKey, nil
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(string)
-	fc.Result = res
-	return ec.marshalNString2string(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_User_publicKey(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "User",
-		Field:      field,
-		IsMethod:   false,
-		IsResolver: false,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type String does not have child fields")
 		},
 	}
 	return fc, nil
@@ -6636,6 +6522,80 @@ func (ec *executionContext) fieldContext___Type_specifiedByURL(ctx context.Conte
 
 // region    **************************** input.gotpl *****************************
 
+func (ec *executionContext) unmarshalInputBlockType(ctx context.Context, obj interface{}) (model.BlockType, error) {
+	var it model.BlockType
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	fieldsInOrder := [...]string{"_num", "nounce", "data", "prev", "current", "verify"}
+	for _, k := range fieldsInOrder {
+		v, ok := asMap[k]
+		if !ok {
+			continue
+		}
+		switch k {
+		case "_num":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_num"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Num = data
+		case "nounce":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nounce"))
+			data, err := ec.unmarshalNInt2int(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Nounce = data
+		case "data":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
+			data, err := ec.unmarshalNDataType2ᚖmatᚑbackᚋgraphᚋmodelᚐDataType(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Data = data
+		case "prev":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("prev"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Prev = data
+		case "current":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("current"))
+			data, err := ec.unmarshalNString2string(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Current = data
+		case "verify":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("verify"))
+			data, err := ec.unmarshalNBoolean2bool(ctx, v)
+			if err != nil {
+				return it, err
+			}
+			it.Verify = data
+		}
+	}
+
+	return it, nil
+}
+
 func (ec *executionContext) unmarshalInputDataType(ctx context.Context, obj interface{}) (model.DataType, error) {
 	var it model.DataType
 	asMap := map[string]interface{}{}
@@ -7452,16 +7412,6 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "privateKey":
-			out.Values[i] = ec._User_privateKey(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "publicKey":
-			out.Values[i] = ec._User_publicKey(ctx, field, obj)
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -7921,6 +7871,11 @@ func (ec *executionContext) marshalNBlock2ᚖmatᚑbackᚋgraphᚋmodelᚐBlock(
 	return ec._Block(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalNBlockType2matᚑbackᚋgraphᚋmodelᚐBlockType(ctx context.Context, v interface{}) (model.BlockType, error) {
+	res, err := ec.unmarshalInputBlockType(ctx, v)
+	return res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalNBoolean2bool(ctx context.Context, v interface{}) (bool, error) {
 	res, err := graphql.UnmarshalBoolean(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -7987,6 +7942,11 @@ func (ec *executionContext) marshalNData2ᚖmatᚑbackᚋgraphᚋmodelᚐData(ct
 func (ec *executionContext) unmarshalNDataType2matᚑbackᚋgraphᚋmodelᚐDataType(ctx context.Context, v interface{}) (model.DataType, error) {
 	res, err := ec.unmarshalInputDataType(ctx, v)
 	return res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) unmarshalNDataType2ᚖmatᚑbackᚋgraphᚋmodelᚐDataType(ctx context.Context, v interface{}) (*model.DataType, error) {
+	res, err := ec.unmarshalInputDataType(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalNFloat2float64(ctx context.Context, v interface{}) (float64, error) {

@@ -9,8 +9,6 @@ type User{
   email: String!
   password: String!
   current_balance: Float!
-  privateKey: String!
-  publicKey: String!
 }
 
 type Matrix{
@@ -78,8 +76,6 @@ type Mutation{
   updateUser(id: ID!, matrixID: ID!, username: String, email: String, password: String, current_balance: Float): User!
   deleteUser(id: ID!, matrixID: ID!): User!
   
-  createPrivateKey(matrixID:matrixID!, id: ID!, publicKey: String!): User!
-  
   createAdmin(matrixID:ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): Admin!
   updateAdmin(id: ID!, matrixID:ID!, username: String, email: String, password: String): Admin!
 
@@ -96,13 +92,22 @@ type Mutation{
   #To delete a transaction
   deleteBlock(userID: ID!, matrixID:ID!, num: Int!): Block!
 
-  mineBlock(userID: String!, matrixID: String!): Boolean!
+  mineBlock(userID: ID!, matrixID: ID!, block: BlockType!): Boolean!
 }
 
 input DataType{
   from: String!
   to: String!
   amount: Float!
+}
+
+input BlockType{
+  _num: Int!
+  nounce: Int!
+  data: DataType!
+  prev: String!
+  current: String!
+  verify: Boolean!
 }
 
 scalar DatabaseLink

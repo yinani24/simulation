@@ -4,6 +4,9 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
+	// "crypto/ecdsa"
+	// "crypto/elliptic"
+	// "crypto/rand"
 	"fmt"
 	"log"
 	"mat-back/graph/model"
@@ -13,6 +16,7 @@ import (
 
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -29,7 +33,7 @@ type PostSql struct {
 }
 
 // Make the 3 sql databases
-func ConnecttoPostSql(M string) (PostSql,PostSql,PostSql) {
+func ConnecttoPostSql(M string, models ... interface{}) (PostSql) {
 	dotenvErr := godotenv.Load()
 	
 	if dotenvErr != nil {
@@ -49,86 +53,59 @@ func ConnecttoPostSql(M string) (PostSql,PostSql,PostSql) {
 		log.Fatal(err)
 	}
 
-	exists, error1 := CheckDatabaseExists(db, M)
+	Post := PostSql{
+		DB: db,
+	}
+
+	exists, error1 := Post.CheckDatabaseExists(M)
 	if error1 != nil {
 		log.Fatal(error1)
 	}
 	if !exists {
-		CreateDatabase(db, M)
-		MigratePostgreSQLSchema(db, &model.Matrix{})
-	}
-	
-	//User Database Created here
-	dsn2 := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable", host, portStr, user, password)
-	db2, err2 := gorm.Open(postgres.Open(dsn2), &gorm.Config{})
-
-	if err2 != nil {
-		log.Fatal(err2)
-	}
-	exist2, error2 := CheckDatabaseExists(db2, "Users")
-	
-	fmt.Print("Exists 2 \n\n", exist2)
-	
-	if error2 != nil {
-		log.Fatal(error2)
-	}
-	if !exist2 {
-		CreateDatabase(db2, "Users")
-		MigratePostgreSQLSchema(db2, &model.User{})
-	}
-	
-	//Admin Database Created here
-	dsn3 := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable", host, portStr, user, password)
-	db3, err3 := gorm.Open(postgres.Open(dsn3), &gorm.Config{})
-
-	if err3 != nil {
-		log.Fatal(err3)
-	}
-
-	exist3, error3 := CheckDatabaseExists(db3, "Admin")
-	
-	fmt.Print("Exists 3 \n\n", exist3)
-	
-	if error3 != nil {
-		log.Fatal(error3)
-	}
-	if !exist3 {
-		CreateDatabase(db3, "Admin")
-		MigratePostgreSQLSchema(db3, &model.Admin{})
+		Post.CreateDatabase(M)
+		Post.MigratePostgreSQLSchema(models...)
 	}
 
 	return PostSql{
 		DB: db,
-	}, PostSql{
-		DB: db2,
-	}, PostSql{
-		DB: db3,
 	}
 }
 
-//may need to rewrite this function do look through this
-func MigratePostgreSQLSchema(db * gorm.DB, models ...interface{}) error {
-	err := db.AutoMigrate(models...)
+/*
+	Used to Migrate the schema of the models to the Postgres Database i.e Matrix, User and Admin
+*/
+func (p * PostSql) MigratePostgreSQLSchema(models ...interface{}) error {
+	err := p.DB.AutoMigrate(models...)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func CheckDatabaseExists(db *gorm.DB, dbName string) (bool, error) {
+/*
+	To check if the database exists or not
+*/
+func (p * PostSql) CheckDatabaseExists(dbName string) (bool, error) {
 	var count int64
-	result := db.Raw("SELECT COUNT(datname) FROM pg_database WHERE datname = ?", dbName).Scan(&count)
+	result := p.DB.Raw("SELECT COUNT(datname) FROM pg_database WHERE datname = ?", dbName).Scan(&count)
 	if result.Error != nil {
 		return false, result.Error
 	}
 	return count > 0, nil
 }
 
-func CreateDatabase(db *gorm.DB, dbName string) error {
+/*
+	To create the database for the first time
+*/
+func (p * PostSql) CreateDatabase(dbName string) error {
 	database := fmt.Sprintf("CREATE DATABASE %s", dbName)
-	result := db.Exec(database)
+	result := p.DB.Exec(database)
 	return result.Error
 }
+
+/*
+	To delete the database
+*/
 
 func (p * PostSql) DeletePostgreSQLDatabase(databaseName string) error {
 	db := p.DB
@@ -170,11 +147,96 @@ func ConnecttoMongoDB() (MongoDB) {
 	}
 }
 
+func IsBlockValid(newBlock, oldBlock model.Block) bool {
+	if oldBlock.Num+1 != newBlock.Num {
+		return false
+	}
+
+	if oldBlock.Current != newBlock.Prev {
+		return false
+	}
+
+	if HashCalculator(newBlock) != newBlock.Current {
+		return false
+	}
+
+	return true
+}
+
 func HashCalculator(block model.Block) string {
 	//Hashing function
-	record := strconv.Itoa(block.Num) + strconv.Itoa(block.Nounce) + block.Data.From + strconv.FormatFloat(block.Data.Amount, 'f', 10, 64) + block.Data.To + block.Prev
+	record := strconv.Itoa(block.Nounce) + block.Data.From + strconv.FormatFloat(block.Data.Amount, 'f', 10, 64) + block.Data.To + block.Prev
 	h := sha256.New()
 	h.Write([]byte(record))
 	hashed := h.Sum(nil)
 	return hex.EncodeToString(hashed)
+}
+
+// func generateKeyPair() (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+// 	// Generate a random private key
+// 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
+
+// 	// Derive the public key from the private key
+// 	publicKey := &privateKey.PublicKey
+
+// 	return privateKey, publicKey, nil
+// }
+
+// func PrivatePublicKey() {
+// 	privateKey, publicKey, err := generateKeyPair()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	// Serialize the public key to hex
+// 	publicKeyBytes := elliptic.Marshal(publicKey.Curve, publicKey.X, publicKey.Y)
+// 	publicKeyHex := hex.EncodeToString(publicKeyBytes)
+
+// 	fmt.Println("Private Key:", privateKey)
+// 	fmt.Println("Public Key:", publicKeyHex)
+// }
+
+func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64, num int) (bool){
+	client := M.Client.Database(matrixName).Collection(collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	
+	filter := bson.D{{Key: "num", Value: num}}
+	var dataBlock model.CurrentTransaction
+	err := client.FindOne(ctx, filter).Decode(&dataBlock)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			fmt.Println("Document not found")
+		} else {
+			log.Fatal(err)
+		}
+	}
+
+	change := (dataBlock.Percent * float64(count) + 1)/50
+	dataBlock.Percent = change
+	/*
+		This part basically checks if the Current Block collection has reached 50% of the total mine.
+		If yes then it removes the block from the Current Block collection and adds it to the Blockchain collection.
+		or else it just updates the current block collection with the new percent value.
+	*/
+	if dataBlock.Percent > 0.5{
+		var insertBlock model.Block = *dataBlock.Block
+		blockchain := M.Client.Database(matrixName).Collection("Blockchain")
+		_, err := blockchain.InsertOne(ctx, insertBlock)
+		if err != nil {
+			log.Fatal(err)
+		}
+		client.DeleteOne(ctx, filter)
+		return true
+	}else{
+		update := bson.D{{Key: "$set", Value: bson.D{{Key: "current", Value: dataBlock.Block.Current}}}}
+		_, err := client.UpdateOne(ctx, filter, update)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return false
+	}
 }

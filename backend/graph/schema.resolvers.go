@@ -12,15 +12,10 @@ import (
 	"mat-back/graph/model"
 	"sync"
 	"time"
-
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/mongo"
-	// "go.mongodb.org/mongo-driver/bson/primitive"
-	//"go.mongodb.org/mongo-driver/mongo/options"
 )
-
-var mutex = &sync.Mutex{}
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, matrixID string, username string, email string, password string) (*model.User, error) {
@@ -33,14 +28,14 @@ func (r *mutationResolver) CreateUser(ctx context.Context, matrixID string, user
 		CurrentBalance: 0.0,
 	}
 
-	User_Sql.DB.Create(&model_user)
+	Post_Sql.DB.Create(&model_user)
 	return &model_user, nil
 }
 
 // UpdateUser is the resolver for the updateUser field.
 func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) (*model.User, error) {
 	var User model.User
-	if err := User_Sql.DB.First(&User, "id = ?", id).Error; err != nil {
+	if err := Post_Sql.DB.First(&User, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	new_email := User.Email
@@ -68,7 +63,7 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID s
 
 	print("in the Update User function \n\n\n")
 
-	User_Sql.DB.Model(&User).Updates(&model_user)
+	Post_Sql.DB.Model(&User).Updates(&model_user)
 	return &model_user, nil
 }
 
@@ -76,8 +71,8 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID s
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string, matrixID string) (*model.User, error) {
 	var user model.User
 	var matrix model.Matrix
-	User_Sql.DB.Where("id = ? AND matrixID = ?", id, matrixID).Find(&user)
-	Post_sql.DB.Where("id = ?", matrixID).Find(&matrix)
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", id, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
 
 	// Define the filter to select the documents to delete
@@ -92,7 +87,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string, matrixID s
 	// Print the number of deleted documents
 	log.Printf("Deleted %d documents\n", result.DeletedCount)
 
-	User_Sql.DB.Delete(&user, "id = ?", id)
+	Post_Sql.DB.Delete(&user, "id = ?", id)
 
 	return &user, nil
 }
@@ -100,6 +95,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string, matrixID s
 // CreateAdmin is the resolver for the createAdmin field.
 func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.Admin, error) {
 	model_admin := model.Admin{
+		ID:         uuid.New().String(),
 		MatrixID:   matrixID,
 		Email:      email,
 		Password:   password,
@@ -108,7 +104,7 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, use
 	}
 
 	print("in the create Admin function \n\n\n")
-	Admin_sql.DB.Create(&model_admin)
+	Post_Sql.DB.Create(&model_admin)
 
 	return &model_admin, nil
 }
@@ -116,7 +112,7 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, use
 // UpdateAdmin is the resolver for the updateAdmin field.
 func (r *mutationResolver) UpdateAdmin(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.Admin, error) {
 	var Admin model.Admin
-	if err := Admin_sql.DB.First(&Admin, "id = ?", id).Error; err != nil {
+	if err := Post_Sql.DB.First(&Admin, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 	new_email := Admin.Email
@@ -144,7 +140,7 @@ func (r *mutationResolver) UpdateAdmin(ctx context.Context, id string, matrixID 
 
 	print("in the Update User function \n\n\n")
 
-	Admin_sql.DB.Model(&Admin).Updates(&model_admin)
+	Post_Sql.DB.Model(&Admin).Updates(&model_admin)
 	return &model_admin, nil
 }
 
@@ -160,19 +156,19 @@ func (r *mutationResolver) CreateMatrix(ctx context.Context, name string) (*mode
 		Name: name,
 	}
 	print("in the create matrix function \n\n\n")
-	Post_sql.DB.Create(&matrix_model)
+	Post_Sql.DB.Create(&matrix_model)
 	//Add the Genesis block to the mongodb database
 	client := Mongo_db.Client.Database(name).Collection("BlockChain")
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	gen_block := model.Block{
-		Num: 0,
-		Prev: "",
+		Num:      0,
+		Prev:     "",
 		MatrixID: matrix_model.ID,
-		Nounce: 0,
+		Nounce:   0,
 		Data: &model.Data{
-			From: "",
-			To: "",
+			From:   "",
+			To:     "",
 			Amount: 0,
 		},
 		Verify: true,
@@ -185,14 +181,14 @@ func (r *mutationResolver) CreateMatrix(ctx context.Context, name string) (*mode
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	return &matrix_model, nil
 }
 
 // UpdateMatrix is the resolver for the updateMatrix field.
 func (r *mutationResolver) UpdateMatrix(ctx context.Context, id string, name *string) (*model.Matrix, error) {
 	var Matrix model.Matrix
-	if err := Post_sql.DB.First(&Matrix, "id = ?", id).Error; err != nil {
+	if err := Post_Sql.DB.First(&Matrix, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
 
@@ -208,46 +204,43 @@ func (r *mutationResolver) UpdateMatrix(ctx context.Context, id string, name *st
 
 	print("in the Update User function \n\n\n")
 
-	Post_sql.DB.Model(&Matrix).Updates(&model_matrix)
+	Post_Sql.DB.Model(&Matrix).Updates(&model_matrix)
 	return &model_matrix, nil
 }
 
 // DeleteMatrix is the resolver for the deleteMatrix field.
 func (r *mutationResolver) DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error) {
 	var Matrix model.Matrix
-	//Need to delete all the documents related to each user and the whole mongodb database
-	User_Sql.DB.Delete(&model.User{}, "matrixID = ?", id)
-	Admin_sql.DB.Delete(&model.Admin{}, "matrixID = ?", id)
-	Post_sql.DB.Delete(&Matrix, "id = ?", id)
 	
+	Post_Sql.DB.Delete(&model.User{}, "matrixID = ?", id)
+	Post_Sql.DB.Delete(&model.Admin{}, "matrixID = ?", id)
+	Post_Sql.DB.Delete(&Matrix, "id = ?", id)
+
 	err := Mongo_db.Client.Database(Matrix.Name).Drop(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
-	
+
 	return &Matrix, nil
 }
 
 // CreateBlock is the resolver for the createBlock field.
 func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, current string) (*model.Block, error) {
-	mutex.Lock()
-	defer mutex.Unlock()
-
 	var user model.User
 	var matrix model.Matrix
 
-	User_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
-	Post_sql.DB.Where("id = ?", matrixID).Find(&matrix)
-	
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
+
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
 	blockchain := Mongo_db.Client.Database(matrix.Name).Collection("BlockChain")
 	ctx, cancel := context.WithTimeout(context.Background(), 60*time.Second)
 
 	defer cancel()
-	
+
 	pipeline := mongo.Pipeline{
-		{{"$sort", bson.D{{"Num", -1}}}},
-		{{"$limit", 1}},
+		{{Key: "$sort", Value: bson.D{{Key: "Num", Value: -1}}}},
+		{{Key: "$limit", Value: 1}},
 	}
 
 	cur, error_ := blockchain.Aggregate(context.Background(), pipeline)
@@ -267,43 +260,50 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	returnBlock := model.Block{
 		UserID:   userID,
 		MatrixID: matrixID,
-		Data:     &model.Data{
+		Data: &model.Data{
 			From:   data.From,
 			To:     data.To,
 			Amount: data.Amount,
 		},
-		Prev:     highestBlock.Current,
+		Prev: highestBlock.Current,
 	}
 
+	mutex.Lock()
 	returnBlock.Current = database.HashCalculator(returnBlock)
-	
+	mutex.Unlock()
+
 	_, err := client.InsertOne(ctx, returnBlock)
 
 	if err != nil {
 		log.Fatal(err)
 	}
 	/*
-	Insert it into all the current transactions waiting to be mined by peers and hence being verified
+		Insert it into all the current transactions waiting to be mined by peers and hence being verified
 	*/
 	currentblock := Mongo_db.Client.Database(matrix.Name).Collection("CurrentBlock")
 	currentTransaction := model.CurrentTransaction{
-		Block: &returnBlock,
+		Block:   &returnBlock,
 		Percent: 0.0,
-		Status: false,
-	} 
+		Status:  false,
+	}
 	_, err = currentblock.InsertOne(ctx, currentTransaction)
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
 	/*
-	All the transactions that needs to be updated on blocks left to mine by the peers
-	Need to complete the how of mining the block maybe will need to form a new 
-	type that allows for mining and then the value is compared
-	when more than 50% is reached then the mining is done and the block is added to the blockchain
+		All the transactions that needs to be updated on blocks left to mine by the peers
+		Need to complete the how of mining the block maybe will need to form a new
+		type that allows for mining and then the value is compared
+		when more than 50% is reached then the mining is done and the block is added to the blockchain
 	*/
-	
+
+	userTransaction := Mongo_db.Client.Database(matrix.Name).Collection(`${user.Username}MineBlocks`)
+	_, err = userTransaction.InsertOne(ctx, returnBlock)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	return &returnBlock, nil
 }
@@ -312,8 +312,8 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 func (r *mutationResolver) UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) (*model.Block, error) {
 	var user model.User
 	var matrix model.Matrix
-	User_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
-	Post_sql.DB.Where("id = ?", matrixID).Find(&matrix)
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -345,8 +345,8 @@ func (r *mutationResolver) DeleteBlock(ctx context.Context, userID string, matri
 	var user model.User
 	var matrix model.Matrix
 
-	User_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
-	Post_sql.DB.Where("id = ?", matrixID).Find(&matrix)
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -362,42 +362,93 @@ func (r *mutationResolver) DeleteBlock(ctx context.Context, userID string, matri
 }
 
 // MineBlock is the resolver for the mineBlock field.
-func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixID string) (bool, error) {
-	panic(fmt.Errorf("not implemented: MineBlock - mineBlock"))
+func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType) (bool, error) {
+	var user model.User
+	var matrix model.Matrix
+	var count int64
+
+	Post_Sql.DB.Where("matrixID = ?", matrixID).Count(&count)
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
+
+	blockchain := Mongo_db.Client.Database(matrix.Name).Collection("BlockChain")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$sort", Value: bson.D{{Key: "Num", Value: -1}}}},
+		{{Key: "$limit", Value: 1}},
+	}
+
+	cur, error_ := blockchain.Aggregate(context.Background(), pipeline)
+
+	if error_ != nil {
+		log.Fatal(error_)
+	}
+
+	defer cur.Close(context.Background())
+
+	var oldBlock model.Block
+	for cur.Next(context.Background()) {
+		err := cur.Decode(&oldBlock)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	newBlock := model.Block{
+		UserID:   userID,
+		MatrixID: matrixID,
+		Data: &model.Data{
+			From:   block.Data.From,
+			To:     block.Data.To,
+			Amount: block.Data.Amount,
+		},
+		Prev:    block.Prev,
+		Current: block.Current,
+	}
+
+	store := database.IsBlockValid(oldBlock, newBlock)
+	if store {
+		Mongo_db.UpdateBlock(matrix.Name, "CurrentBlock", count, block.Num)
+		return true, nil
+	} else {
+		return false, nil
+	}
 }
 
 // Users is the resolver for the users field.
 func (r *queryResolver) Users(ctx context.Context, matrixID string) ([]*model.User, error) {
 	var users []*model.User
-	User_Sql.DB.Where("matrix_id = ?", matrixID).Find(&users)
+	Post_Sql.DB.Where("matrix_id = ?", matrixID).Find(&users)
 	return users, nil
 }
 
 // User is the resolver for the user field.
 func (r *queryResolver) User(ctx context.Context, id string, matrixID string) (*model.User, error) {
 	var user model.User
-	User_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&user)
 	return &user, nil
 }
 
 // Admin is the resolver for the admin field.
 func (r *queryResolver) Admin(ctx context.Context, id string, matrixID string) (*model.Admin, error) {
 	var admin model.Admin
-	Admin_sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&admin)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&admin)
 	return &admin, nil
 }
 
 // Matrix is the resolver for the Matrix field.
 func (r *queryResolver) Matrix(ctx context.Context, id string) (*model.Matrix, error) {
 	var matrix model.Matrix
-	Post_sql.DB.Where("id = ?", id).Find(&matrix)
+	Post_Sql.DB.Where("id = ?", id).Find(&matrix)
 	return &matrix, nil
 }
 
 // Matrices is the resolver for the Matrices field.
 func (r *queryResolver) Matrices(ctx context.Context) ([]*model.Matrix, error) {
 	var matrices []*model.Matrix
-	Post_sql.DB.Find(&matrices)
+	Post_Sql.DB.Find(&matrices)
 	return matrices, nil
 }
 
@@ -405,8 +456,9 @@ func (r *queryResolver) Matrices(ctx context.Context) ([]*model.Matrix, error) {
 func (r *queryResolver) Blocks(ctx context.Context, matrixID string, userID string) ([]*model.Block, error) {
 	var user model.User
 	var matrix model.Matrix
-	User_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
-	Post_sql.DB.Where("id = ?", matrixID).Find(&matrix)
+
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -435,8 +487,9 @@ func (r *queryResolver) Blocks(ctx context.Context, matrixID string, userID stri
 func (r *queryResolver) Block(ctx context.Context, num int, matrixID string, userID string) (*model.Block, error) {
 	var user model.User
 	var matrix model.Matrix
-	User_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
-	Post_sql.DB.Where("id = ?", matrixID).Find(&matrix)
+
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
@@ -455,18 +508,68 @@ func (r *queryResolver) Block(ctx context.Context, num int, matrixID string, use
 
 // BlocksToPrint is the resolver for the BlocksToPrint field.
 func (r *queryResolver) BlocksToPrint(ctx context.Context, matrixID string, userID string, collection string) ([]*model.CurrentTransaction, error) {
-	panic(fmt.Errorf("not implemented: BlocksToPrint - BlocksToPrint"))
+	var matrix model.Matrix
+	var user model.User
+
+	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
+
+	client := Mongo_db.Client.Database(matrix.Name).Collection(`${user.name}${collection}`)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var blocks []*model.CurrentTransaction
+
+	cursor, err := client.Find(ctx, bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var block model.CurrentTransaction
+		if err = cursor.Decode(&block); err != nil {
+			log.Fatal(err)
+		}
+		blocks = append(blocks, &block)
+	}
+
+	return blocks, nil
 }
 
 // BlockChain is the resolver for the BlockChain field.
 func (r *queryResolver) BlockChain(ctx context.Context, matrixID string) ([]*model.Block, error) {
-	panic(fmt.Errorf("not implemented: BlockChain - BlockChain"))
+	var matrix model.Matrix
+	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
+
+	client := Mongo_db.Client.Database(matrix.Name).Collection("BlockChain")
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var blocks []*model.Block
+
+	cursor, err := client.Find(ctx, bson.M{})
+	if err != nil {
+		log.Fatal(err)
+	}
+	defer cursor.Close(ctx)
+
+	for cursor.Next(ctx) {
+		var block model.Block
+		if err = cursor.Decode(&block); err != nil {
+			log.Fatal(err)
+		}
+		blocks = append(blocks, &block)
+	}
+
+	return blocks, nil
 }
 
 // VerifyAdmin is the resolver for the verifyAdmin field.
 func (r *queryResolver) VerifyAdmin(ctx context.Context, id string, matrixID string, username string, password string, privilidge bool) (bool, error) {
 	var admin model.Admin
-	Admin_sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&admin)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&admin)
+
 	if admin.Username == username && admin.Password == password && admin.Privilidge == privilidge {
 		return true, nil
 	}
@@ -476,7 +579,8 @@ func (r *queryResolver) VerifyAdmin(ctx context.Context, id string, matrixID str
 // VerifyUser is the resolver for the verifyUser field.
 func (r *queryResolver) VerifyUser(ctx context.Context, id string, matrixID string, username string, password string) (bool, error) {
 	var user model.User
-	User_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&user)
+
 	if user.Username == username && user.Password == password {
 		return true, nil
 	}
@@ -498,5 +602,6 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
+var mutex = &sync.Mutex{}
 var Mongo_db = database.ConnecttoMongoDB()
-var Post_sql, User_Sql, Admin_sql = database.ConnecttoPostSql("simulation")
+var Post_Sql = database.ConnecttoPostSql("Simulation", &model.Matrix{}, &model.Admin{}, &model.User{})
