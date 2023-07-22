@@ -71,8 +71,13 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID s
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string, matrixID string) (*model.User, error) {
 	var user model.User
 	var matrix model.Matrix
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", id, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).First(&user)
+	
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
+
+	log.Println(user.Username)
+	log.Println(matrix.Name)
+
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
 
 	// Define the filter to select the documents to delete
@@ -87,7 +92,7 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string, matrixID s
 	// Print the number of deleted documents
 	log.Printf("Deleted %d documents\n", result.DeletedCount)
 
-	Post_Sql.DB.Delete(&user, "id = ?", id)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Delete(&model.User{})
 
 	return &user, nil
 }
@@ -103,7 +108,6 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, use
 		Privilidge: privilidge,
 	}
 
-	print("in the create Admin function \n\n\n")
 	Post_Sql.DB.Create(&model_admin)
 
 	return &model_admin, nil
@@ -159,7 +163,7 @@ func (r *mutationResolver) CreateMatrix(ctx context.Context, name string) (*mode
 	Post_Sql.DB.Create(&matrix_model)
 	//Add the Genesis block to the mongodb database
 	client := Mongo_db.Client.Database(name).Collection("BlockChain")
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
 	defer cancel()
 	gen_block := model.Block{
 		Num:      0,
@@ -175,7 +179,7 @@ func (r *mutationResolver) CreateMatrix(ctx context.Context, name string) (*mode
 	}
 
 	gen_block.Current = database.HashCalculator(gen_block)
-
+	fmt.Print("Genesis Block Current is: ",gen_block.Current)
 	_, err := client.InsertOne(ctx, gen_block)
 
 	if err != nil {
@@ -212,8 +216,8 @@ func (r *mutationResolver) UpdateMatrix(ctx context.Context, id string, name *st
 func (r *mutationResolver) DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error) {
 	var Matrix model.Matrix
 	
-	Post_Sql.DB.Delete(&model.User{}, "matrixID = ?", id)
-	Post_Sql.DB.Delete(&model.Admin{}, "matrixID = ?", id)
+	Post_Sql.DB.Delete(&model.User{}, "matrix_id = ?", id)
+	Post_Sql.DB.Delete(&model.Admin{}, "matrix_id = ?", id)
 	Post_Sql.DB.Delete(&Matrix, "id = ?", id)
 
 	err := Mongo_db.Client.Database(Matrix.Name).Drop(context.Background())
@@ -229,7 +233,7 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	var user model.User
 	var matrix model.Matrix
 
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
@@ -256,7 +260,10 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 			log.Fatal(err)
 		}
 	}
-
+	/*
+		Make a unique id for the object don't forget to add it there
+		for it to use
+	*/
 	returnBlock := model.Block{
 		UserID:   userID,
 		MatrixID: matrixID,
@@ -271,6 +278,8 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	mutex.Lock()
 	returnBlock.Current = database.HashCalculator(returnBlock)
 	mutex.Unlock()
+
+	log.Print("The return Block current value is", returnBlock.Current)
 
 	_, err := client.InsertOne(ctx, returnBlock)
 
@@ -298,8 +307,10 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 		type that allows for mining and then the value is compared
 		when more than 50% is reached then the mining is done and the block is added to the blockchain
 	*/
+	new_collection := user.Username + "MineBlocks"
+	log.Print(new_collection)
 
-	userTransaction := Mongo_db.Client.Database(matrix.Name).Collection(`${user.Username}MineBlocks`)
+	userTransaction := Mongo_db.Client.Database(matrix.Name).Collection(new_collection)
 	_, err = userTransaction.InsertOne(ctx, returnBlock)
 	if err != nil {
 		log.Fatal(err)
@@ -312,7 +323,7 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 func (r *mutationResolver) UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) (*model.Block, error) {
 	var user model.User
 	var matrix model.Matrix
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
@@ -345,7 +356,7 @@ func (r *mutationResolver) DeleteBlock(ctx context.Context, userID string, matri
 	var user model.User
 	var matrix model.Matrix
 
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
@@ -367,8 +378,8 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 	var matrix model.Matrix
 	var count int64
 
-	Post_Sql.DB.Where("matrixID = ?", matrixID).Count(&count)
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("matrix_id = ?", matrixID).Count(&count)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	blockchain := Mongo_db.Client.Database(matrix.Name).Collection("BlockChain")
@@ -457,7 +468,7 @@ func (r *queryResolver) Blocks(ctx context.Context, matrixID string, userID stri
 	var user model.User
 	var matrix model.Matrix
 
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
@@ -488,7 +499,7 @@ func (r *queryResolver) Block(ctx context.Context, num int, matrixID string, use
 	var user model.User
 	var matrix model.Matrix
 
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
@@ -511,10 +522,11 @@ func (r *queryResolver) BlocksToPrint(ctx context.Context, matrixID string, user
 	var matrix model.Matrix
 	var user model.User
 
-	Post_Sql.DB.Where("id = ? AND matrixID = ?", userID, matrixID).Find(&user)
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
-	client := Mongo_db.Client.Database(matrix.Name).Collection(`${user.name}${collection}`)
+	new_collection := user.Username + collection
+	client := Mongo_db.Client.Database(matrix.Name).Collection(new_collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 

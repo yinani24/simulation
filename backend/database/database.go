@@ -215,7 +215,7 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 		}
 	}
 
-	change := (dataBlock.Percent * float64(count) + 1)/50
+	change := (dataBlock.Percent * float64(count) + 1)/float64(count)
 	dataBlock.Percent = change
 	/*
 		This part basically checks if the Current Block collection has reached 50% of the total mine.
@@ -224,6 +224,7 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 	*/
 	if dataBlock.Percent > 0.5{
 		var insertBlock model.Block = *dataBlock.Block
+		insertBlock.Verify = true
 		blockchain := M.Client.Database(matrixName).Collection("Blockchain")
 		_, err := blockchain.InsertOne(ctx, insertBlock)
 		if err != nil {
