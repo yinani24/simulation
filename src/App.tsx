@@ -1,25 +1,44 @@
 import React from 'react';
-import logo from './logo.svg';
+// import logo from './logo.svg';
 import './App.css';
+import Simulation from './components/simulation';
+import { BrowserRouter as Router, Routes, Route} from "react-router-dom";
+import Matrix from './components/matrixlayout';
+import { useState } from 'react';
 
 function App() {
+   
+  interface MatrixData {
+    id: number;
+    name: string;
+    route: string;
+  }
+
+  const [matrixData, setMatrixData] = useState<MatrixData[]>([]);
+  const handleMatrixAdd = () => {
+      const newMatrix: MatrixData = {
+          "id" : matrixData.length + 1,
+          "name" : "matrix" + (matrixData.length + 1),
+          "route" : "/matrix" + (matrixData.length + 1)
+      }
+      setMatrixData([...matrixData, newMatrix]);
+  }
+
+  const handleMatrixRemove = () => {
+      setMatrixData(matrixData.slice(0, matrixData.length - 1));
+  }
+
   return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
+    <Router>
+      <Routes>
+        <Route path='/' element={<Simulation 
+          matrixData={matrixData}
+          handleMatrixAdd={handleMatrixAdd}
+          handleMatrixRemove={handleMatrixRemove}/>}/>
+        <Route path=':matrix/*' element={<Matrix/>}>
+        </Route> 
+      </Routes>
+    </Router>
   );
 }
 
