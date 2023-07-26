@@ -86,8 +86,8 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateAdmin  func(childComplexity int, matrixID string, username string, email string, password string, privilidge bool) int
-		CreateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data model.DataType, current string) int
+		CreateAdmin  func(childComplexity int, matrixID string, username string, email string, password string) int
+		CreateBlock  func(childComplexity int, userID string, matrixID string, data model.DataType) int
 		CreateMatrix func(childComplexity int, name string) int
 		CreateUser   func(childComplexity int, matrixID string, username string, email string, password string) int
 		DeleteBlock  func(childComplexity int, userID string, matrixID string, num int) int
@@ -95,7 +95,7 @@ type ComplexityRoot struct {
 		DeleteUser   func(childComplexity int, id string, matrixID string) int
 		MineBlock    func(childComplexity int, userID string, matrixID string, block model.BlockType) int
 		UpdateAdmin  func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
-		UpdateBlock  func(childComplexity int, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) int
+		UpdateBlock  func(childComplexity int, userID string, matrixID string, num *int, nounce *int, data *model.DataType, prev *string, current *string) int
 		UpdateMatrix func(childComplexity int, id string, name *string) int
 		UpdateRate   func(childComplexity int, id string, matrixID string) int
 		UpdateUser   func(childComplexity int, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) int
@@ -111,7 +111,7 @@ type ComplexityRoot struct {
 		Matrix        func(childComplexity int, id string) int
 		User          func(childComplexity int, id string, matrixID string) int
 		Users         func(childComplexity int, matrixID string) int
-		VerifyAdmin   func(childComplexity int, id string, matrixID string, username string, password string, privilidge bool) int
+		VerifyAdmin   func(childComplexity int, id string, matrixID string, username string, password string) int
 		VerifyUser    func(childComplexity int, id string, matrixID string, username string, password string) int
 	}
 
@@ -129,14 +129,14 @@ type MutationResolver interface {
 	CreateUser(ctx context.Context, matrixID string, username string, email string, password string) (*model.User, error)
 	UpdateUser(ctx context.Context, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) (*model.User, error)
 	DeleteUser(ctx context.Context, id string, matrixID string) (*model.User, error)
-	CreateAdmin(ctx context.Context, matrixID string, username string, email string, password string, privilidge bool) (*model.Admin, error)
+	CreateAdmin(ctx context.Context, matrixID string, username string, email string, password string) (*model.Admin, error)
 	UpdateAdmin(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.Admin, error)
 	UpdateRate(ctx context.Context, id string, matrixID string) (*model.Admin, error)
 	CreateMatrix(ctx context.Context, name string) (*model.Matrix, error)
 	UpdateMatrix(ctx context.Context, id string, name *string) (*model.Matrix, error)
 	DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error)
-	CreateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, current string) (*model.Block, error)
-	UpdateBlock(ctx context.Context, userID string, matrixID string, num int, nounce int, data model.DataType, prev string, current string) (*model.Block, error)
+	CreateBlock(ctx context.Context, userID string, matrixID string, data model.DataType) (*model.Block, error)
+	UpdateBlock(ctx context.Context, userID string, matrixID string, num *int, nounce *int, data *model.DataType, prev *string, current *string) (*model.Block, error)
 	DeleteBlock(ctx context.Context, userID string, matrixID string, num int) (*model.Block, error)
 	MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType) (bool, error)
 }
@@ -150,7 +150,7 @@ type QueryResolver interface {
 	Block(ctx context.Context, num int, matrixID string, userID string) (*model.Block, error)
 	BlocksToPrint(ctx context.Context, matrixID string, userID string, collection string) ([]*model.CurrentTransaction, error)
 	BlockChain(ctx context.Context, matrixID string) ([]*model.Block, error)
-	VerifyAdmin(ctx context.Context, id string, matrixID string, username string, password string, privilidge bool) (bool, error)
+	VerifyAdmin(ctx context.Context, id string, matrixID string, username string, password string) (bool, error)
 	VerifyUser(ctx context.Context, id string, matrixID string, username string, password string) (bool, error)
 }
 
@@ -354,7 +354,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateAdmin(childComplexity, args["matrixID"].(string), args["username"].(string), args["email"].(string), args["password"].(string), args["privilidge"].(bool)), true
+		return e.complexity.Mutation.CreateAdmin(childComplexity, args["matrixID"].(string), args["username"].(string), args["email"].(string), args["password"].(string)), true
 
 	case "Mutation.createBlock":
 		if e.complexity.Mutation.CreateBlock == nil {
@@ -366,7 +366,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.CreateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(model.DataType), args["current"].(string)), true
+		return e.complexity.Mutation.CreateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["data"].(model.DataType)), true
 
 	case "Mutation.createMatrix":
 		if e.complexity.Mutation.CreateMatrix == nil {
@@ -462,7 +462,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int), args["nounce"].(int), args["data"].(model.DataType), args["prev"].(string), args["current"].(string)), true
+		return e.complexity.Mutation.UpdateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(*int), args["nounce"].(*int), args["data"].(*model.DataType), args["prev"].(*string), args["current"].(*string)), true
 
 	case "Mutation.updateMatrix":
 		if e.complexity.Mutation.UpdateMatrix == nil {
@@ -613,7 +613,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.VerifyAdmin(childComplexity, args["_id"].(string), args["matrixID"].(string), args["username"].(string), args["password"].(string), args["privilidge"].(bool)), true
+		return e.complexity.Query.VerifyAdmin(childComplexity, args["_id"].(string), args["matrixID"].(string), args["username"].(string), args["password"].(string)), true
 
 	case "Query.verifyUser":
 		if e.complexity.Query.VerifyUser == nil {
@@ -834,15 +834,6 @@ func (ec *executionContext) field_Mutation_createAdmin_args(ctx context.Context,
 		}
 	}
 	args["password"] = arg3
-	var arg4 bool
-	if tmp, ok := rawArgs["privilidge"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("privilidge"))
-		arg4, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["privilidge"] = arg4
 	return args, nil
 }
 
@@ -867,42 +858,15 @@ func (ec *executionContext) field_Mutation_createBlock_args(ctx context.Context,
 		}
 	}
 	args["matrixID"] = arg1
-	var arg2 int
-	if tmp, ok := rawArgs["num"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("num"))
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["num"] = arg2
-	var arg3 int
-	if tmp, ok := rawArgs["nounce"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nounce"))
-		arg3, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["nounce"] = arg3
-	var arg4 model.DataType
+	var arg2 model.DataType
 	if tmp, ok := rawArgs["data"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
-		arg4, err = ec.unmarshalNDataType2matᚑbackᚋgraphᚋmodelᚐDataType(ctx, tmp)
+		arg2, err = ec.unmarshalNDataType2matᚑbackᚋgraphᚋmodelᚐDataType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["data"] = arg4
-	var arg5 string
-	if tmp, ok := rawArgs["current"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("current"))
-		arg5, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["current"] = arg5
+	args["data"] = arg2
 	return args, nil
 }
 
@@ -1140,46 +1104,46 @@ func (ec *executionContext) field_Mutation_updateBlock_args(ctx context.Context,
 		}
 	}
 	args["matrixID"] = arg1
-	var arg2 int
+	var arg2 *int
 	if tmp, ok := rawArgs["num"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("num"))
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["num"] = arg2
-	var arg3 int
+	var arg3 *int
 	if tmp, ok := rawArgs["nounce"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nounce"))
-		arg3, err = ec.unmarshalNInt2int(ctx, tmp)
+		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["nounce"] = arg3
-	var arg4 model.DataType
+	var arg4 *model.DataType
 	if tmp, ok := rawArgs["data"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
-		arg4, err = ec.unmarshalNDataType2matᚑbackᚋgraphᚋmodelᚐDataType(ctx, tmp)
+		arg4, err = ec.unmarshalODataType2ᚖmatᚑbackᚋgraphᚋmodelᚐDataType(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["data"] = arg4
-	var arg5 string
+	var arg5 *string
 	if tmp, ok := rawArgs["prev"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("prev"))
-		arg5, err = ec.unmarshalNString2string(ctx, tmp)
+		arg5, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
 	args["prev"] = arg5
-	var arg6 string
+	var arg6 *string
 	if tmp, ok := rawArgs["current"]; ok {
 		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("current"))
-		arg6, err = ec.unmarshalNString2string(ctx, tmp)
+		arg6, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
@@ -1533,15 +1497,6 @@ func (ec *executionContext) field_Query_verifyAdmin_args(ctx context.Context, ra
 		}
 	}
 	args["password"] = arg3
-	var arg4 bool
-	if tmp, ok := rawArgs["privilidge"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("privilidge"))
-		arg4, err = ec.unmarshalNBoolean2bool(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["privilidge"] = arg4
 	return args, nil
 }
 
@@ -2972,7 +2927,7 @@ func (ec *executionContext) _Mutation_createAdmin(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateAdmin(rctx, fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["email"].(string), fc.Args["password"].(string), fc.Args["privilidge"].(bool))
+		return ec.resolvers.Mutation().CreateAdmin(rctx, fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["email"].(string), fc.Args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3380,7 +3335,7 @@ func (ec *executionContext) _Mutation_createBlock(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().CreateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(model.DataType), fc.Args["current"].(string))
+		return ec.resolvers.Mutation().CreateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["data"].(model.DataType))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3453,7 +3408,7 @@ func (ec *executionContext) _Mutation_updateBlock(ctx context.Context, field gra
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int), fc.Args["nounce"].(int), fc.Args["data"].(model.DataType), fc.Args["prev"].(string), fc.Args["current"].(string))
+		return ec.resolvers.Mutation().UpdateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(*int), fc.Args["nounce"].(*int), fc.Args["data"].(*model.DataType), fc.Args["prev"].(*string), fc.Args["current"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4260,7 +4215,7 @@ func (ec *executionContext) _Query_verifyAdmin(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().VerifyAdmin(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string), fc.Args["privilidge"].(bool))
+		return ec.resolvers.Query().VerifyAdmin(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -8418,6 +8373,14 @@ func (ec *executionContext) marshalOCurrentTransaction2ᚖmatᚑbackᚋgraphᚋm
 	return ec._CurrentTransaction(ctx, sel, v)
 }
 
+func (ec *executionContext) unmarshalODataType2ᚖmatᚑbackᚋgraphᚋmodelᚐDataType(ctx context.Context, v interface{}) (*model.DataType, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputDataType(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
 	if v == nil {
 		return nil, nil
@@ -8432,6 +8395,22 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	}
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
+}
+
+func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := graphql.UnmarshalInt(v)
+	return &res, graphql.ErrorOnPath(ctx, err)
+}
+
+func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	res := graphql.MarshalInt(*v)
+	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

@@ -17,7 +17,7 @@ type Admin struct {
 }
 
 type Block struct {
-	Num      int    `json:"_num" bson:"_num"`
+	Num      int    `json:"_num" bson:"_num,omitempty"`
 	MatrixID string `json:"matrixID" bson:"matrixID"`
 	UserID   string `json:"userID" bson:"userID"`
 	Nounce   int    `json:"nounce" bson:"nounce"`
@@ -28,7 +28,7 @@ type Block struct {
 }
 
 type BlockType struct {
-	Num     int       `json:"_num" bson:"_num"`
+	Num     int       `json:"_num" bson:"_num,omitempty"`
 	Nounce  int       `json:"nounce" bson:"nounce"`
 	Data    *DataType `json:"data" bson:"data"`
 	Prev    string    `json:"prev" bson:"prev"`
