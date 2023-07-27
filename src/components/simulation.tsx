@@ -2,15 +2,14 @@ import React from "react";
 import { Link} from "react-router-dom";
 
 interface MatrixData {
-    id: number;
+    id: string;
     name: string;
-    route: string;
 }
 
 function Simulation({ matrixData, handleMatrixAdd, handleMatrixRemove }: {
     matrixData: MatrixData[];
     handleMatrixAdd: () => void;
-    handleMatrixRemove: () => void;
+    handleMatrixRemove: (id: string) => void;
 }) { 
     return(
         <>
@@ -18,7 +17,7 @@ function Simulation({ matrixData, handleMatrixAdd, handleMatrixRemove }: {
             {matrixData.map((matrix) => (
                 <li key={matrix.id}>
                     <button key={matrix.id}>
-                        <Link to={matrix.route}>
+                        <Link to={`/matrix${matrix.id}`}>
                             {matrix.name}
                         </Link>
                     </button>
@@ -26,7 +25,7 @@ function Simulation({ matrixData, handleMatrixAdd, handleMatrixRemove }: {
             ))}
         </ul>
         <button onClick={handleMatrixAdd}>Add Button</button>
-        <button onClick={handleMatrixRemove}>Remove Button</button>
+        <button onClick={() => handleMatrixRemove(matrixData[matrixData.length - 1].id)}>Remove Button</button>
         </>
     )
 }
