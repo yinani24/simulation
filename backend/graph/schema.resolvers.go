@@ -20,6 +20,13 @@ import (
 
 // CreateUser is the resolver for the createUser field.
 func (r *mutationResolver) CreateUser(ctx context.Context, matrixID string, username string, email string, password string) (*model.User, error) {
+	var count int64
+	Post_Sql.DB.Model(&model.User{}).Where("matrix_id = ? AND username = ? AND password = ?", matrixID, username, password).Count(&count)
+
+	if count > 0{
+		return nil, fmt.Errorf("user already exists")
+	}
+
 	model_user := model.User{
 		ID:             uuid.New().String(),
 		MatrixID:       matrixID,
@@ -72,34 +79,35 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID s
 func (r *mutationResolver) DeleteUser(ctx context.Context, id string, matrixID string) (*model.User, error) {
 	var user model.User
 	var matrix model.Matrix
-	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).First(&user)
-
+	
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	log.Println(user.Username)
 	log.Println(matrix.Name)
 
-	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
-
-	// Define the filter to select the documents to delete
-	filter := bson.M{"userID": id} // Customize the filter based on your criteria
-
-	// Delete the documents that match the filter
-	result, err := client.DeleteMany(context.Background(), filter)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	
+	defer cancel()
+	
+	err := Mongo_db.Client.Database(matrix.Name).Collection(user.Username).Drop(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
 
-	// Print the number of deleted documents
-	log.Printf("Deleted %d documents\n", result.DeletedCount)
-
-	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Delete(&model.User{})
-
+	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Unscoped().Delete(&model.User{})
 	return &user, nil
 }
 
 // CreateAdmin is the resolver for the createAdmin field.
 func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, username string, email string, password string) (*model.Admin, error) {
+	var count int64
+	Post_Sql.DB.Model(&model.Admin{}).Where("matrix_id = ? AND username = ? AND password = ?", matrixID, username, password).Count(&count)
+
+	if count > 0{
+		return nil, fmt.Errorf("user already exists")
+	}
+	
 	model_admin := model.Admin{
 		ID:         uuid.New().String(),
 		MatrixID:   matrixID,
@@ -160,12 +168,27 @@ func (r *mutationResolver) CreateMatrix(ctx context.Context, name string) (*mode
 		ID:   uuid.New().String(),
 		Name: name,
 	}
-	print("in the create matrix function \n\n\n")
-	Post_Sql.DB.Create(&matrix_model)
+
+	log.Print("In the Create Matrix Function\n")
+
+	tx := Post_Sql.DB.Begin()
+
+	if err := tx.Where("name = ?", name).Delete(&model.Matrix{}).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
+	if err := tx.Create(&matrix_model).Error; err != nil {
+		tx.Rollback()
+		return nil, err
+	}
+
 	//Add the Genesis block to the mongodb database
 	client := Mongo_db.Client.Database(name).Collection("BlockChain")
 	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
+
 	defer cancel()
+
 	gen_block := model.Block{
 		Num:      0,
 		Prev:     "",
@@ -184,7 +207,13 @@ func (r *mutationResolver) CreateMatrix(ctx context.Context, name string) (*mode
 	_, err := client.InsertOne(ctx, gen_block)
 
 	if err != nil {
+		tx.Rollback()
 		log.Fatal(err)
+	}
+
+	err = tx.Commit().Error
+	if err != nil {
+		return nil, err
 	}
 
 	return &matrix_model, nil
@@ -216,16 +245,19 @@ func (r *mutationResolver) UpdateMatrix(ctx context.Context, id string, name *st
 // DeleteMatrix is the resolver for the deleteMatrix field.
 func (r *mutationResolver) DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error) {
 	var Matrix model.Matrix
-
-	Post_Sql.DB.Delete(&model.User{}, "matrix_id = ?", id)
-	Post_Sql.DB.Delete(&model.Admin{}, "matrix_id = ?", id)
-	Post_Sql.DB.Delete(&Matrix, "id = ?", id)
+	Post_Sql.DB.Where("id = ?", id).Find(&Matrix)
 
 	err := Mongo_db.Client.Database(Matrix.Name).Drop(context.Background())
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	log.Print("In the Delete Function, The matrix name is: \n", Matrix.Name)
+
+	Post_Sql.DB.Unscoped().Delete(&model.User{}, "matrix_id = ?", id)
+	Post_Sql.DB.Unscoped().Delete(&model.Admin{}, "matrix_id = ?", id)
+	Post_Sql.DB.Unscoped().Delete(&model.Matrix{}, "id = ?", id)
+	log.Print("Everything is deleted\n")
 	return &Matrix, nil
 }
 
@@ -590,25 +622,27 @@ func (r *queryResolver) BlockChain(ctx context.Context, matrixID string) ([]*mod
 }
 
 // VerifyAdmin is the resolver for the verifyAdmin field.
-func (r *queryResolver) VerifyAdmin(ctx context.Context, id string, matrixID string, username string, password string) (bool, error) {
-	var admin model.Admin
-	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&admin)
-
-	if admin.Username == username && admin.Password == password && admin.Privilidge {
-		return true, nil
+func (r *queryResolver) VerifyAdmin(ctx context.Context, matrixID string, username string, password string) (*model.VerifyAdminResult, error) {
+	var count int64
+	Post_Sql.DB.Model(&model.Admin{}).Where("matrix_id = ? AND username = ? AND password = ?", matrixID, username, password).Count(&count)
+	if (count == 1){
+		var admin model.Admin
+		Post_Sql.DB.Where("matrix_id = ? AND username = ? AND password = ?", matrixID, username, password).Find(&admin)
+		return &model.VerifyAdminResult{Verify: true, Admin: &admin}, nil
 	}
-	return false, nil
+	return &model.VerifyAdminResult{Verify: false, Admin: nil}, nil
 }
 
 // VerifyUser is the resolver for the verifyUser field.
-func (r *queryResolver) VerifyUser(ctx context.Context, id string, matrixID string, username string, password string) (bool, error) {
-	var user model.User
-	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Find(&user)
-
-	if user.Username == username && user.Password == password {
-		return true, nil
+func (r *queryResolver) VerifyUser(ctx context.Context, matrixID string, username string, password string) (*model.VerifyUserResult, error) {
+	var count int64
+	Post_Sql.DB.Model(&model.User{}).Where("matrix_id = ? AND username = ? AND password = ?", matrixID, username, password).Count(&count)
+	if (count == 1){
+		var user model.User
+		Post_Sql.DB.Where("matrix_id = ? AND username = ? AND password = ?", matrixID, username, password).Find(&user)
+		return &model.VerifyUserResult{Verify: true, User: &user}, nil
 	}
-	return false, nil
+	return &model.VerifyUserResult{Verify: false, User: nil}, nil
 }
 
 // Mutation returns MutationResolver implementation.

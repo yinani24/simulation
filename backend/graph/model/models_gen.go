@@ -6,7 +6,7 @@ import "gorm.io/gorm"
 type Admin struct {
 	gorm.Model
 	ID            string  `gorm:"primaryKey" json:"_id"`
-	MatrixID      string  `json:"matrixID"`
+	MatrixID      string  `gorm:"unique" json:"matrixID"`
 	Username      string  `gorm:"unique" json:"username"`
 	Email         string  `gorm:"unique" json:"email"`
 	Password      string  `gorm:"unique" json:"password"`
@@ -68,4 +68,14 @@ type User struct {
 	Email          string  `gorm:"unique" json:"email"`
 	Password       string  `gorm:"unique" json:"password"`
 	CurrentBalance float64 `json:"current_balance"`
+}
+
+type VerifyAdminResult struct {
+	Verify bool   `json:"verify"`
+	Admin  *Admin `json:"admin"`
+}
+
+type VerifyUserResult struct {
+	Verify bool  `json:"verify"`
+	User   *User `json:"user"`
 }

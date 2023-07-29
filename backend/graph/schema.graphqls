@@ -51,6 +51,16 @@ type CurrentTransaction{
   status: Boolean!
 }
 
+type VerifyAdminResult{
+  verify: Boolean!
+  admin: Admin!
+}
+
+type VerifyUserResult{
+  verify: Boolean!
+  user: User!
+}
+
 type Query {
   users(matrixID: ID!): [User!]!
   user(_id: ID!, matrixID: ID!): User! 
@@ -67,8 +77,8 @@ type Query {
   BlocksToPrint(matrixID: ID!, userID: ID!, collection: String!): [CurrentTransaction]!
   BlockChain(matrixID: ID!): [Block!]!
 
-  verifyAdmin(_id: ID!, matrixID: ID!, username: String!, password: String!): Boolean!
-  verifyUser(_id: ID!, matrixID: ID!, username: String!, password: String!): Boolean!
+  verifyAdmin(matrixID: ID!, username: String!, password: String!): VerifyAdminResult!
+  verifyUser(matrixID: ID!, username: String!, password: String!): VerifyUserResult!
 }
 
 type Mutation{

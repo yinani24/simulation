@@ -4,16 +4,12 @@ import (
 	"context"
 	"crypto/sha256"
 	"encoding/hex"
-	// "crypto/ecdsa"
-	// "crypto/elliptic"
-	// "crypto/rand"
 	"fmt"
 	"log"
 	"mat-back/graph/model"
 	"os"
 	"strconv"
 	"time"
-
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -58,6 +54,8 @@ func ConnecttoPostSql(M string, models ... interface{}) (PostSql) {
 	}
 
 	exists, error1 := Post.CheckDatabaseExists(M)
+	log.Print("Exists Value: \n", exists)
+
 	if error1 != nil {
 		log.Fatal(error1)
 	}
@@ -91,6 +89,8 @@ func (p * PostSql) CheckDatabaseExists(dbName string) (bool, error) {
 	if result.Error != nil {
 		return false, result.Error
 	}
+	log.Print(result)
+	log.Print(count)
 	return count > 0, nil
 }
 

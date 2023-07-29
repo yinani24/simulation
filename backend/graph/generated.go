@@ -111,8 +111,8 @@ type ComplexityRoot struct {
 		Matrix        func(childComplexity int, id string) int
 		User          func(childComplexity int, id string, matrixID string) int
 		Users         func(childComplexity int, matrixID string) int
-		VerifyAdmin   func(childComplexity int, id string, matrixID string, username string, password string) int
-		VerifyUser    func(childComplexity int, id string, matrixID string, username string, password string) int
+		VerifyAdmin   func(childComplexity int, matrixID string, username string, password string) int
+		VerifyUser    func(childComplexity int, matrixID string, username string, password string) int
 	}
 
 	User struct {
@@ -122,6 +122,16 @@ type ComplexityRoot struct {
 		MatrixID       func(childComplexity int) int
 		Password       func(childComplexity int) int
 		Username       func(childComplexity int) int
+	}
+
+	VerifyAdminResult struct {
+		Admin  func(childComplexity int) int
+		Verify func(childComplexity int) int
+	}
+
+	VerifyUserResult struct {
+		User   func(childComplexity int) int
+		Verify func(childComplexity int) int
 	}
 }
 
@@ -150,8 +160,8 @@ type QueryResolver interface {
 	Block(ctx context.Context, num int, matrixID string, userID string) (*model.Block, error)
 	BlocksToPrint(ctx context.Context, matrixID string, userID string, collection string) ([]*model.CurrentTransaction, error)
 	BlockChain(ctx context.Context, matrixID string) ([]*model.Block, error)
-	VerifyAdmin(ctx context.Context, id string, matrixID string, username string, password string) (bool, error)
-	VerifyUser(ctx context.Context, id string, matrixID string, username string, password string) (bool, error)
+	VerifyAdmin(ctx context.Context, matrixID string, username string, password string) (*model.VerifyAdminResult, error)
+	VerifyUser(ctx context.Context, matrixID string, username string, password string) (*model.VerifyUserResult, error)
 }
 
 type executableSchema struct {
@@ -613,7 +623,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.VerifyAdmin(childComplexity, args["_id"].(string), args["matrixID"].(string), args["username"].(string), args["password"].(string)), true
+		return e.complexity.Query.VerifyAdmin(childComplexity, args["matrixID"].(string), args["username"].(string), args["password"].(string)), true
 
 	case "Query.verifyUser":
 		if e.complexity.Query.VerifyUser == nil {
@@ -625,7 +635,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.VerifyUser(childComplexity, args["_id"].(string), args["matrixID"].(string), args["username"].(string), args["password"].(string)), true
+		return e.complexity.Query.VerifyUser(childComplexity, args["matrixID"].(string), args["username"].(string), args["password"].(string)), true
 
 	case "User.current_balance":
 		if e.complexity.User.CurrentBalance == nil {
@@ -668,6 +678,34 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.User.Username(childComplexity), true
+
+	case "VerifyAdminResult.admin":
+		if e.complexity.VerifyAdminResult.Admin == nil {
+			break
+		}
+
+		return e.complexity.VerifyAdminResult.Admin(childComplexity), true
+
+	case "VerifyAdminResult.verify":
+		if e.complexity.VerifyAdminResult.Verify == nil {
+			break
+		}
+
+		return e.complexity.VerifyAdminResult.Verify(childComplexity), true
+
+	case "VerifyUserResult.user":
+		if e.complexity.VerifyUserResult.User == nil {
+			break
+		}
+
+		return e.complexity.VerifyUserResult.User(childComplexity), true
+
+	case "VerifyUserResult.verify":
+		if e.complexity.VerifyUserResult.Verify == nil {
+			break
+		}
+
+		return e.complexity.VerifyUserResult.Verify(childComplexity), true
 
 	}
 	return 0, false
@@ -1462,41 +1500,32 @@ func (ec *executionContext) field_Query_verifyAdmin_args(ctx context.Context, ra
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_id"))
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["_id"] = arg0
+	args["matrixID"] = arg0
 	var arg1 string
-	if tmp, ok := rawArgs["matrixID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
-		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+	if tmp, ok := rawArgs["username"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["matrixID"] = arg1
+	args["username"] = arg1
 	var arg2 string
-	if tmp, ok := rawArgs["username"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
 		arg2, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["username"] = arg2
-	var arg3 string
-	if tmp, ok := rawArgs["password"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["password"] = arg3
+	args["password"] = arg2
 	return args, nil
 }
 
@@ -1504,41 +1533,32 @@ func (ec *executionContext) field_Query_verifyUser_args(ctx context.Context, raw
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["_id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("_id"))
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["_id"] = arg0
+	args["matrixID"] = arg0
 	var arg1 string
-	if tmp, ok := rawArgs["matrixID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
-		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+	if tmp, ok := rawArgs["username"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+		arg1, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["matrixID"] = arg1
+	args["username"] = arg1
 	var arg2 string
-	if tmp, ok := rawArgs["username"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("username"))
+	if tmp, ok := rawArgs["password"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
 		arg2, err = ec.unmarshalNString2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["username"] = arg2
-	var arg3 string
-	if tmp, ok := rawArgs["password"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("password"))
-		arg3, err = ec.unmarshalNString2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["password"] = arg3
+	args["password"] = arg2
 	return args, nil
 }
 
@@ -4215,7 +4235,7 @@ func (ec *executionContext) _Query_verifyAdmin(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().VerifyAdmin(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string))
+		return ec.resolvers.Query().VerifyAdmin(rctx, fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4227,9 +4247,9 @@ func (ec *executionContext) _Query_verifyAdmin(ctx context.Context, field graphq
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*model.VerifyAdminResult)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNVerifyAdminResult2ᚖmatᚑbackᚋgraphᚋmodelᚐVerifyAdminResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_verifyAdmin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4239,7 +4259,13 @@ func (ec *executionContext) fieldContext_Query_verifyAdmin(ctx context.Context, 
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			switch field.Name {
+			case "verify":
+				return ec.fieldContext_VerifyAdminResult_verify(ctx, field)
+			case "admin":
+				return ec.fieldContext_VerifyAdminResult_admin(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VerifyAdminResult", field.Name)
 		},
 	}
 	defer func() {
@@ -4270,7 +4296,7 @@ func (ec *executionContext) _Query_verifyUser(ctx context.Context, field graphql
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().VerifyUser(rctx, fc.Args["_id"].(string), fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string))
+		return ec.resolvers.Query().VerifyUser(rctx, fc.Args["matrixID"].(string), fc.Args["username"].(string), fc.Args["password"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -4282,9 +4308,9 @@ func (ec *executionContext) _Query_verifyUser(ctx context.Context, field graphql
 		}
 		return graphql.Null
 	}
-	res := resTmp.(bool)
+	res := resTmp.(*model.VerifyUserResult)
 	fc.Result = res
-	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+	return ec.marshalNVerifyUserResult2ᚖmatᚑbackᚋgraphᚋmodelᚐVerifyUserResult(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Query_verifyUser(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -4294,7 +4320,13 @@ func (ec *executionContext) fieldContext_Query_verifyUser(ctx context.Context, f
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			return nil, errors.New("field of type Boolean does not have child fields")
+			switch field.Name {
+			case "verify":
+				return ec.fieldContext_VerifyUserResult_verify(ctx, field)
+			case "user":
+				return ec.fieldContext_VerifyUserResult_user(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type VerifyUserResult", field.Name)
 		},
 	}
 	defer func() {
@@ -4699,6 +4731,216 @@ func (ec *executionContext) fieldContext_User_current_balance(ctx context.Contex
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VerifyAdminResult_verify(ctx context.Context, field graphql.CollectedField, obj *model.VerifyAdminResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyAdminResult_verify(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Verify, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VerifyAdminResult_verify(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VerifyAdminResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VerifyAdminResult_admin(ctx context.Context, field graphql.CollectedField, obj *model.VerifyAdminResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyAdminResult_admin(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Admin, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.Admin)
+	fc.Result = res
+	return ec.marshalNAdmin2ᚖmatᚑbackᚋgraphᚋmodelᚐAdmin(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VerifyAdminResult_admin(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VerifyAdminResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Admin__id(ctx, field)
+			case "matrixID":
+				return ec.fieldContext_Admin_matrixID(ctx, field)
+			case "username":
+				return ec.fieldContext_Admin_username(ctx, field)
+			case "email":
+				return ec.fieldContext_Admin_email(ctx, field)
+			case "password":
+				return ec.fieldContext_Admin_password(ctx, field)
+			case "privilidge":
+				return ec.fieldContext_Admin_privilidge(ctx, field)
+			case "releaseFlow":
+				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "totalCurrency":
+				return ec.fieldContext_Admin_totalCurrency(ctx, field)
+			case "setRate":
+				return ec.fieldContext_Admin_setRate(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type Admin", field.Name)
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VerifyUserResult_verify(ctx context.Context, field graphql.CollectedField, obj *model.VerifyUserResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyUserResult_verify(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Verify, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(bool)
+	fc.Result = res
+	return ec.marshalNBoolean2bool(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VerifyUserResult_verify(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VerifyUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Boolean does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _VerifyUserResult_user(ctx context.Context, field graphql.CollectedField, obj *model.VerifyUserResult) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_VerifyUserResult_user(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.User, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*model.User)
+	fc.Result = res
+	return ec.marshalNUser2ᚖmatᚑbackᚋgraphᚋmodelᚐUser(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_VerifyUserResult_user(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "VerifyUserResult",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			switch field.Name {
+			case "_id":
+				return ec.fieldContext_User__id(ctx, field)
+			case "matrixID":
+				return ec.fieldContext_User_matrixID(ctx, field)
+			case "username":
+				return ec.fieldContext_User_username(ctx, field)
+			case "email":
+				return ec.fieldContext_User_email(ctx, field)
+			case "password":
+				return ec.fieldContext_User_password(ctx, field)
+			case "current_balance":
+				return ec.fieldContext_User_current_balance(ctx, field)
+			}
+			return nil, fmt.Errorf("no field named %q was found under type User", field.Name)
 		},
 	}
 	return fc, nil
@@ -7390,6 +7632,94 @@ func (ec *executionContext) _User(ctx context.Context, sel ast.SelectionSet, obj
 	return out
 }
 
+var verifyAdminResultImplementors = []string{"VerifyAdminResult"}
+
+func (ec *executionContext) _VerifyAdminResult(ctx context.Context, sel ast.SelectionSet, obj *model.VerifyAdminResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, verifyAdminResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VerifyAdminResult")
+		case "verify":
+			out.Values[i] = ec._VerifyAdminResult_verify(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "admin":
+			out.Values[i] = ec._VerifyAdminResult_admin(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
+var verifyUserResultImplementors = []string{"VerifyUserResult"}
+
+func (ec *executionContext) _VerifyUserResult(ctx context.Context, sel ast.SelectionSet, obj *model.VerifyUserResult) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, verifyUserResultImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	deferred := make(map[string]*graphql.FieldSet)
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("VerifyUserResult")
+		case "verify":
+			out.Values[i] = ec._VerifyUserResult_verify(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "user":
+			out.Values[i] = ec._VerifyUserResult_user(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch(ctx)
+	if out.Invalids > 0 {
+		return graphql.Null
+	}
+
+	atomic.AddInt32(&ec.deferred, int32(len(deferred)))
+
+	for label, dfs := range deferred {
+		ec.processDeferredGroup(graphql.DeferredGroup{
+			Label:    label,
+			Path:     graphql.GetPath(ctx),
+			FieldSet: dfs,
+			Context:  ctx,
+		})
+	}
+
+	return out
+}
+
 var __DirectiveImplementors = []string{"__Directive"}
 
 func (ec *executionContext) ___Directive(ctx context.Context, sel ast.SelectionSet, obj *introspection.Directive) graphql.Marshaler {
@@ -8078,6 +8408,34 @@ func (ec *executionContext) marshalNUser2ᚖmatᚑbackᚋgraphᚋmodelᚐUser(ct
 		return graphql.Null
 	}
 	return ec._User(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVerifyAdminResult2matᚑbackᚋgraphᚋmodelᚐVerifyAdminResult(ctx context.Context, sel ast.SelectionSet, v model.VerifyAdminResult) graphql.Marshaler {
+	return ec._VerifyAdminResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNVerifyAdminResult2ᚖmatᚑbackᚋgraphᚋmodelᚐVerifyAdminResult(ctx context.Context, sel ast.SelectionSet, v *model.VerifyAdminResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._VerifyAdminResult(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNVerifyUserResult2matᚑbackᚋgraphᚋmodelᚐVerifyUserResult(ctx context.Context, sel ast.SelectionSet, v model.VerifyUserResult) graphql.Marshaler {
+	return ec._VerifyUserResult(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNVerifyUserResult2ᚖmatᚑbackᚋgraphᚋmodelᚐVerifyUserResult(ctx context.Context, sel ast.SelectionSet, v *model.VerifyUserResult) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "the requested element is null which the schema does not allow")
+		}
+		return graphql.Null
+	}
+	return ec._VerifyUserResult(ctx, sel, v)
 }
 
 func (ec *executionContext) marshalN__Directive2githubᚗcomᚋ99designsᚋgqlgenᚋgraphqlᚋintrospectionᚐDirective(ctx context.Context, sel ast.SelectionSet, v introspection.Directive) graphql.Marshaler {
