@@ -91,17 +91,11 @@ type Mutation{
 
   updateRate(id: ID!, matrixID:ID!): Admin!
 
-  createMatrix(name: String!): Matrix!
-  updateMatrix(id: ID!, name: String): Matrix! 
+  createMatrix(name: String!): Matrix! 
   deleteMatrix(id: ID!): Matrix!
   
   #To create Blocks for transactions
   createBlock(userID: ID!, matrixID:ID!, data: DataType!): Block!
-  #To update on the current transactions
-  updateBlock(userID: ID!, matrixID:ID!, num: Int, nounce: Int, data: DataType, prev: String, current: String): Block!
-  #To delete a transaction
-  deleteBlock(userID: ID!, matrixID:ID!, num: Int!): Block!
-
   mineBlock(userID: ID!, matrixID: ID!, block: BlockType!): Boolean!
 }
 

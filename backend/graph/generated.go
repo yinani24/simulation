@@ -90,13 +90,10 @@ type ComplexityRoot struct {
 		CreateBlock  func(childComplexity int, userID string, matrixID string, data model.DataType) int
 		CreateMatrix func(childComplexity int, name string) int
 		CreateUser   func(childComplexity int, matrixID string, username string, email string, password string) int
-		DeleteBlock  func(childComplexity int, userID string, matrixID string, num int) int
 		DeleteMatrix func(childComplexity int, id string) int
 		DeleteUser   func(childComplexity int, id string, matrixID string) int
 		MineBlock    func(childComplexity int, userID string, matrixID string, block model.BlockType) int
 		UpdateAdmin  func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
-		UpdateBlock  func(childComplexity int, userID string, matrixID string, num *int, nounce *int, data *model.DataType, prev *string, current *string) int
-		UpdateMatrix func(childComplexity int, id string, name *string) int
 		UpdateRate   func(childComplexity int, id string, matrixID string) int
 		UpdateUser   func(childComplexity int, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) int
 	}
@@ -143,11 +140,8 @@ type MutationResolver interface {
 	UpdateAdmin(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.Admin, error)
 	UpdateRate(ctx context.Context, id string, matrixID string) (*model.Admin, error)
 	CreateMatrix(ctx context.Context, name string) (*model.Matrix, error)
-	UpdateMatrix(ctx context.Context, id string, name *string) (*model.Matrix, error)
 	DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error)
 	CreateBlock(ctx context.Context, userID string, matrixID string, data model.DataType) (*model.Block, error)
-	UpdateBlock(ctx context.Context, userID string, matrixID string, num *int, nounce *int, data *model.DataType, prev *string, current *string) (*model.Block, error)
-	DeleteBlock(ctx context.Context, userID string, matrixID string, num int) (*model.Block, error)
 	MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType) (bool, error)
 }
 type QueryResolver interface {
@@ -402,18 +396,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateUser(childComplexity, args["matrixID"].(string), args["username"].(string), args["email"].(string), args["password"].(string)), true
 
-	case "Mutation.deleteBlock":
-		if e.complexity.Mutation.DeleteBlock == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_deleteBlock_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.DeleteBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(int)), true
-
 	case "Mutation.deleteMatrix":
 		if e.complexity.Mutation.DeleteMatrix == nil {
 			break
@@ -461,30 +443,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Mutation.UpdateAdmin(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(*string), args["email"].(*string), args["password"].(*string)), true
-
-	case "Mutation.updateBlock":
-		if e.complexity.Mutation.UpdateBlock == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateBlock_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["num"].(*int), args["nounce"].(*int), args["data"].(*model.DataType), args["prev"].(*string), args["current"].(*string)), true
-
-	case "Mutation.updateMatrix":
-		if e.complexity.Mutation.UpdateMatrix == nil {
-			break
-		}
-
-		args, err := ec.field_Mutation_updateMatrix_args(context.TODO(), rawArgs)
-		if err != nil {
-			return 0, false
-		}
-
-		return e.complexity.Mutation.UpdateMatrix(childComplexity, args["id"].(string), args["name"].(*string)), true
 
 	case "Mutation.updateRate":
 		if e.complexity.Mutation.UpdateRate == nil {
@@ -965,39 +923,6 @@ func (ec *executionContext) field_Mutation_createUser_args(ctx context.Context, 
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_deleteBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["userID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userID"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["matrixID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
-		arg1, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["matrixID"] = arg1
-	var arg2 int
-	if tmp, ok := rawArgs["num"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("num"))
-		arg2, err = ec.unmarshalNInt2int(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["num"] = arg2
-	return args, nil
-}
-
 func (ec *executionContext) field_Mutation_deleteMatrix_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -1118,99 +1043,6 @@ func (ec *executionContext) field_Mutation_updateAdmin_args(ctx context.Context,
 		}
 	}
 	args["password"] = arg4
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateBlock_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["userID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("userID"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["userID"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["matrixID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
-		arg1, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["matrixID"] = arg1
-	var arg2 *int
-	if tmp, ok := rawArgs["num"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("num"))
-		arg2, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["num"] = arg2
-	var arg3 *int
-	if tmp, ok := rawArgs["nounce"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("nounce"))
-		arg3, err = ec.unmarshalOInt2ᚖint(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["nounce"] = arg3
-	var arg4 *model.DataType
-	if tmp, ok := rawArgs["data"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("data"))
-		arg4, err = ec.unmarshalODataType2ᚖmatᚑbackᚋgraphᚋmodelᚐDataType(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["data"] = arg4
-	var arg5 *string
-	if tmp, ok := rawArgs["prev"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("prev"))
-		arg5, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["prev"] = arg5
-	var arg6 *string
-	if tmp, ok := rawArgs["current"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("current"))
-		arg6, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["current"] = arg6
-	return args, nil
-}
-
-func (ec *executionContext) field_Mutation_updateMatrix_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
-	var err error
-	args := map[string]interface{}{}
-	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
-		arg0, err = ec.unmarshalNID2string(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["id"] = arg0
-	var arg1 *string
-	if tmp, ok := rawArgs["name"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("name"))
-		arg1, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
-		if err != nil {
-			return nil, err
-		}
-	}
-	args["name"] = arg1
 	return args, nil
 }
 
@@ -3219,67 +3051,6 @@ func (ec *executionContext) fieldContext_Mutation_createMatrix(ctx context.Conte
 	return fc, nil
 }
 
-func (ec *executionContext) _Mutation_updateMatrix(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateMatrix(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateMatrix(rctx, fc.Args["id"].(string), fc.Args["name"].(*string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Matrix)
-	fc.Result = res
-	return ec.marshalNMatrix2ᚖmatᚑbackᚋgraphᚋmodelᚐMatrix(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateMatrix(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "_id":
-				return ec.fieldContext_Matrix__id(ctx, field)
-			case "name":
-				return ec.fieldContext_Matrix_name(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Matrix", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateMatrix_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
 func (ec *executionContext) _Mutation_deleteMatrix(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_deleteMatrix(ctx, field)
 	if err != nil {
@@ -3408,152 +3179,6 @@ func (ec *executionContext) fieldContext_Mutation_createBlock(ctx context.Contex
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Mutation_createBlock_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_updateBlock(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_updateBlock(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(*int), fc.Args["nounce"].(*int), fc.Args["data"].(*model.DataType), fc.Args["prev"].(*string), fc.Args["current"].(*string))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Block)
-	fc.Result = res
-	return ec.marshalNBlock2ᚖmatᚑbackᚋgraphᚋmodelᚐBlock(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_updateBlock(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "_num":
-				return ec.fieldContext_Block__num(ctx, field)
-			case "matrixID":
-				return ec.fieldContext_Block_matrixID(ctx, field)
-			case "userID":
-				return ec.fieldContext_Block_userID(ctx, field)
-			case "nounce":
-				return ec.fieldContext_Block_nounce(ctx, field)
-			case "data":
-				return ec.fieldContext_Block_data(ctx, field)
-			case "prev":
-				return ec.fieldContext_Block_prev(ctx, field)
-			case "current":
-				return ec.fieldContext_Block_current(ctx, field)
-			case "verify":
-				return ec.fieldContext_Block_verify(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_updateBlock_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
-		ec.Error(ctx, err)
-		return fc, err
-	}
-	return fc, nil
-}
-
-func (ec *executionContext) _Mutation_deleteBlock(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Mutation_deleteBlock(ctx, field)
-	if err != nil {
-		return graphql.Null
-	}
-	ctx = graphql.WithFieldContext(ctx, fc)
-	defer func() {
-		if r := recover(); r != nil {
-			ec.Error(ctx, ec.Recover(ctx, r))
-			ret = graphql.Null
-		}
-	}()
-	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
-		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().DeleteBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["num"].(int))
-	})
-	if err != nil {
-		ec.Error(ctx, err)
-		return graphql.Null
-	}
-	if resTmp == nil {
-		if !graphql.HasFieldError(ctx, fc) {
-			ec.Errorf(ctx, "must not be null")
-		}
-		return graphql.Null
-	}
-	res := resTmp.(*model.Block)
-	fc.Result = res
-	return ec.marshalNBlock2ᚖmatᚑbackᚋgraphᚋmodelᚐBlock(ctx, field.Selections, res)
-}
-
-func (ec *executionContext) fieldContext_Mutation_deleteBlock(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
-	fc = &graphql.FieldContext{
-		Object:     "Mutation",
-		Field:      field,
-		IsMethod:   true,
-		IsResolver: true,
-		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "_num":
-				return ec.fieldContext_Block__num(ctx, field)
-			case "matrixID":
-				return ec.fieldContext_Block_matrixID(ctx, field)
-			case "userID":
-				return ec.fieldContext_Block_userID(ctx, field)
-			case "nounce":
-				return ec.fieldContext_Block_nounce(ctx, field)
-			case "data":
-				return ec.fieldContext_Block_data(ctx, field)
-			case "prev":
-				return ec.fieldContext_Block_prev(ctx, field)
-			case "current":
-				return ec.fieldContext_Block_current(ctx, field)
-			case "verify":
-				return ec.fieldContext_Block_verify(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Block", field.Name)
-		},
-	}
-	defer func() {
-		if r := recover(); r != nil {
-			err = ec.Recover(ctx, r)
-			ec.Error(ctx, err)
-		}
-	}()
-	ctx = graphql.WithFieldContext(ctx, fc)
-	if fc.Args, err = ec.field_Mutation_deleteBlock_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -7211,13 +6836,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "updateMatrix":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateMatrix(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
 		case "deleteMatrix":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_deleteMatrix(ctx, field)
@@ -7228,20 +6846,6 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 		case "createBlock":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_createBlock(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "updateBlock":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_updateBlock(ctx, field)
-			})
-			if out.Values[i] == graphql.Null {
-				out.Invalids++
-			}
-		case "deleteBlock":
-			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
-				return ec._Mutation_deleteBlock(ctx, field)
 			})
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
@@ -8731,14 +8335,6 @@ func (ec *executionContext) marshalOCurrentTransaction2ᚖmatᚑbackᚋgraphᚋm
 	return ec._CurrentTransaction(ctx, sel, v)
 }
 
-func (ec *executionContext) unmarshalODataType2ᚖmatᚑbackᚋgraphᚋmodelᚐDataType(ctx context.Context, v interface{}) (*model.DataType, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := ec.unmarshalInputDataType(ctx, v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
 func (ec *executionContext) unmarshalOFloat2ᚖfloat64(ctx context.Context, v interface{}) (*float64, error) {
 	if v == nil {
 		return nil, nil
@@ -8753,22 +8349,6 @@ func (ec *executionContext) marshalOFloat2ᚖfloat64(ctx context.Context, sel as
 	}
 	res := graphql.MarshalFloatContext(*v)
 	return graphql.WrapContextMarshaler(ctx, res)
-}
-
-func (ec *executionContext) unmarshalOInt2ᚖint(ctx context.Context, v interface{}) (*int, error) {
-	if v == nil {
-		return nil, nil
-	}
-	res, err := graphql.UnmarshalInt(v)
-	return &res, graphql.ErrorOnPath(ctx, err)
-}
-
-func (ec *executionContext) marshalOInt2ᚖint(ctx context.Context, sel ast.SelectionSet, v *int) graphql.Marshaler {
-	if v == nil {
-		return graphql.Null
-	}
-	res := graphql.MarshalInt(*v)
-	return res
 }
 
 func (ec *executionContext) unmarshalOString2ᚖstring(ctx context.Context, v interface{}) (*string, error) {

@@ -5,11 +5,12 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"math/rand"
+	"time"
 	"log"
 	"mat-back/graph/model"
 	"os"
 	"strconv"
-	"time"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
@@ -199,13 +200,19 @@ func HashCalculator(block model.Block) string {
 // 	fmt.Println("Public Key:", publicKeyHex)
 // }
 
-func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64, num int) (bool){
+func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64, userID string, matrixID string, Current string) (bool){
+	/*
+		Open the CurrentBlock Collection and find the block we recieved from the user.
+	*/
 	client := M.Client.Database(matrixName).Collection(collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	
-	filter := bson.D{{Key: "num", Value: num}}
-	var dataBlock model.CurrentTransaction
+	filter := bson.D{{Key: "block.current", Value: Current},
+		{Key: "block.matrixID", Value: matrixID},
+		{Key: "block.userID", Value: userID}}
+	
+		var dataBlock model.CurrentTransaction
 	err := client.FindOne(ctx, filter).Decode(&dataBlock)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -214,6 +221,10 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 			log.Fatal(err)
 		}
 	}
+
+	/*
+		Update the count of people mining this block in the CurrentBlock Collection
+	*/
 
 	change := (dataBlock.Percent * float64(count) + 1)/float64(count)
 	dataBlock.Percent = change
@@ -240,4 +251,71 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 		}
 		return false
 	}
+}
+
+func (M * MongoDB) GetHighestFromBlockChain(matrixName string, collection string) (model.Block){
+	blockchain := M.Client.Database(matrixName).Collection(collection)
+	_, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+
+	defer cancel()
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$sort", Value: bson.D{{Key: "_num", Value: -1}}}},
+		{{Key: "$limit", Value: 1}},
+	}
+
+	cur, error_ := blockchain.Aggregate(context.Background(), pipeline)
+	if error_ != nil {
+		log.Fatal(error_)
+	}
+	defer cur.Close(context.Background())
+
+	var highestBlock model.Block
+	for cur.Next(context.Background()) {
+		err := cur.Decode(&highestBlock)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return highestBlock
+}
+
+func (M * MongoDB) DeleteBlockFromMineBlock(matrixName string, collection string, id string){
+	_, err := M.Client.Database(matrixName).Collection(collection).DeleteOne(context.Background(), bson.D{{Key: "_id", Value: id}})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (M * MongoDB) Update(matrixName string, collection string, num int, prev string){
+	coll := M.Client.Database(matrixName).Collection(collection)
+	cursor, err := coll.Find(context.TODO(), bson.D{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	var block model.block
+	for cursor.Next(context.TODO()) {		
+		if err := cursor.Decode(&block); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(block)
+		block._num = num
+		block.prev = prev
+		update := bson.D{{Key: "$set", Value: bson.D{
+			{Key: "prev", Value: prev},
+			{Key: "_num", Value: num},
+			{Key: "current", Value: HashCalculator(block)}}}}
+		_, err := coll.UpdateOne(context.Background(), bson.D{{Key: "_id", Value: block._id}}, update)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func RandomVariableCreator() int{
+	min := 1
+	max := 1000000000
+	return rand.Intn(max-min+1) + min
 }
