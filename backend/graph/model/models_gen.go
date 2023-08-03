@@ -11,12 +11,13 @@ type Admin struct {
 	Email         string  `gorm:"unique" json:"email"`
 	Password      string  `gorm:"unique" json:"password"`
 	Privilidge    bool    `json:"privilidge"`
-	ReleaseFlow   float64 `json:"releaseFlow"`
+	Circulation   float64 `json:"circulation"`
 	TotalCurrency float64 `json:"totalCurrency"`
 	SetRate       float64 `json:"setRate"`
 }
 
 type Block struct {
+	ID       string `json:"_id" bson:"_id,omitempty"`
 	Num      int    `json:"_num" bson:"_num,omitempty"`
 	MatrixID string `json:"matrixID" bson:"matrixID"`
 	UserID   string `json:"userID" bson:"userID"`

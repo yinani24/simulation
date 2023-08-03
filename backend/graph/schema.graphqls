@@ -1,5 +1,4 @@
 # GraphQL schema example
-#
 # https://gqlgen.com/getting-started/
 
 type User{
@@ -23,7 +22,7 @@ type Admin{
   email: String!
   password: String!
   privilidge: Boolean!
-  releaseFlow: Float!
+  circulation: Float!
   totalCurrency: Float!
   setRate: Float!
 }
@@ -35,6 +34,7 @@ type Data{
 }
 
 type Block{
+  _id: ID!
   _num: Int!
   matrixID: ID!
   userID: ID!
@@ -66,13 +66,14 @@ type Query {
   user(_id: ID!, matrixID: ID!): User! 
 
   admin(_id: ID!, matrixID: ID!): Admin!
-  
+  getRate(matrixID: ID!): Float!
+
   Matrix(_id: ID!): Matrix!
   Matrices: [Matrix!]!
   
   #To print personal transactions
-  Blocks(matrixID: ID!, userID: ID!): [Block]!
-  Block(_num: Int!, matrixID: ID!, userID: ID!): Block!
+  Blocks(matrixID: ID!, userID: ID!, collection: String): [Block]!
+  Block(_num: Int!, matrixID: ID!, userID: ID!, collection: String): Block!
 
   BlocksToPrint(matrixID: ID!, userID: ID!, collection: String!): [CurrentTransaction]!
   BlockChain(matrixID: ID!): [Block!]!
@@ -88,15 +89,16 @@ type Mutation{
   
   createAdmin(matrixID:ID!, username: String!, email: String!, password: String!): Admin!
   updateAdmin(id: ID!, matrixID:ID!, username: String, email: String, password: String): Admin!
-
-  updateRate(id: ID!, matrixID:ID!): Admin!
+  updateCirculation(matrixID:ID!, circulation: Float!): Float!
+  updateTotalCurrency(matrixID:ID!, totalCurrency: Float! ): Float!
+  updateRate(matrixID:ID!, setRate: Float!): Float!
 
   createMatrix(name: String!): Matrix! 
   deleteMatrix(id: ID!): Matrix!
   
   #To create Blocks for transactions
   createBlock(userID: ID!, matrixID:ID!, data: DataType!): Block!
-  mineBlock(userID: ID!, matrixID: ID!, block: BlockType!): Boolean!
+  mineBlock(userID: ID!, matrixID: ID!, block: BlockType!, blockID: ID!): Boolean!
 }
 
 input DataType{

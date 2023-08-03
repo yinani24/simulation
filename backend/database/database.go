@@ -5,15 +5,16 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
-	"math/rand"
-	"time"
 	"log"
 	"mat-back/graph/model"
+	"math/rand"
 	"os"
 	"strconv"
+	"time"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
 	"go.mongodb.org/mongo-driver/mongo/readpref"
@@ -212,7 +213,7 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 		{Key: "block.matrixID", Value: matrixID},
 		{Key: "block.userID", Value: userID}}
 	
-		var dataBlock model.CurrentTransaction
+	var dataBlock model.CurrentTransaction
 	err := client.FindOne(ctx, filter).Decode(&dataBlock)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
@@ -244,7 +245,7 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 		client.DeleteOne(ctx, filter)
 		return true
 	}else{
-		update := bson.D{{Key: "$set", Value: bson.D{{Key: "current", Value: dataBlock.Block.Current}}}}
+		update := bson.D{{Key: "$set", Value: bson.D{{Key: "percent", Value: dataBlock.Percent}}}}
 		_, err := client.UpdateOne(ctx, filter, update)
 		if err != nil {
 			log.Fatal(err)
@@ -288,29 +289,78 @@ func (M * MongoDB) DeleteBlockFromMineBlock(matrixName string, collection string
 	}
 }
 
-func (M * MongoDB) Update(matrixName string, collection string, num int, prev string){
+func (M * MongoDB) UpdateMineBlock(matrixName string, collection string, num int, prev string){
 	coll := M.Client.Database(matrixName).Collection(collection)
 	cursor, err := coll.Find(context.TODO(), bson.D{})
 
 	if err != nil {
 		log.Fatal(err)
 	}
-	var block model.block
-	for cursor.Next(context.TODO()) {		
+	var block model.Block
+	for cursor.Next(context.TODO()) {	
+		var result bson.M	
 		if err := cursor.Decode(&block); err != nil {
 			log.Fatal(err)
 		}
+		if err = cursor.Decode(&result); err != nil {
+			log.Fatal(err)
+		}
 		fmt.Println(block)
-		block._num = num
-		block.prev = prev
-		update := bson.D{{Key: "$set", Value: bson.D{
-			{Key: "prev", Value: prev},
-			{Key: "_num", Value: num},
-			{Key: "current", Value: HashCalculator(block)}}}}
-		_, err := coll.UpdateOne(context.Background(), bson.D{{Key: "_id", Value: block._id}}, update)
+		id := result["_id"].(primitive.ObjectID)
+		block.Num = num
+		block.Prev = prev
+		update := bson.M{
+			"$set": bson.M{
+				"prev":    prev,
+				"_num":    num,
+				"current": HashCalculator(block),
+			},
+		}
+		_, err := coll.UpdateOne(context.Background(), bson.M{"_id": id}, update)
 		if err != nil {
 			log.Fatal(err)
 		}
+	}
+}
+
+func (M * MongoDB) UpdateCurrentBlock(matrixName string, collection string, num int, prev string){
+	coll := M.Client.Database(matrixName).Collection(collection)
+	cursor, err := coll.Find(context.TODO(), bson.D{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	var block model.CurrentTransaction
+	for cursor.Next(context.TODO()) {	
+		var result bson.M	
+		if err := cursor.Decode(&block); err != nil {
+			log.Fatal(err)
+		}
+		if err = cursor.Decode(&result); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(block)
+		id := result["_id"].(primitive.ObjectID)
+		block.Block.Num = num
+		block.Block.Prev = prev
+		update := bson.M{
+			"$set": bson.M{
+				"block.prev":    prev,
+				"block._num":    num,
+				"block.current": HashCalculator(*block.Block),
+			},
+		}
+		_, err := coll.UpdateOne(context.Background(), bson.M{"_id": id}, update)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func (M * MongoDB) AddToPreviosTransactions(matrixName string, username string , block model.Block){
+	_, err := M.Client.Database(matrixName).Collection(username).InsertOne(context.Background(), block)
+	if err != nil {
+		log.Fatal(err)
 	}
 }
 
