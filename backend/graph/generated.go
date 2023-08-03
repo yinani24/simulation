@@ -46,12 +46,12 @@ type DirectiveRoot struct {
 
 type ComplexityRoot struct {
 	Admin struct {
+		Circulation   func(childComplexity int) int
 		Email         func(childComplexity int) int
 		ID            func(childComplexity int) int
 		MatrixID      func(childComplexity int) int
 		Password      func(childComplexity int) int
 		Privilidge    func(childComplexity int) int
-		ReleaseFlow   func(childComplexity int) int
 		SetRate       func(childComplexity int) int
 		TotalCurrency func(childComplexity int) int
 		Username      func(childComplexity int) int
@@ -60,6 +60,7 @@ type ComplexityRoot struct {
 	Block struct {
 		Current  func(childComplexity int) int
 		Data     func(childComplexity int) int
+		ID       func(childComplexity int) int
 		MatrixID func(childComplexity int) int
 		Nounce   func(childComplexity int) int
 		Num      func(childComplexity int) int
@@ -86,24 +87,27 @@ type ComplexityRoot struct {
 	}
 
 	Mutation struct {
-		CreateAdmin  func(childComplexity int, matrixID string, username string, email string, password string) int
-		CreateBlock  func(childComplexity int, userID string, matrixID string, data model.DataType) int
-		CreateMatrix func(childComplexity int, name string) int
-		CreateUser   func(childComplexity int, matrixID string, username string, email string, password string) int
-		DeleteMatrix func(childComplexity int, id string) int
-		DeleteUser   func(childComplexity int, id string, matrixID string) int
-		MineBlock    func(childComplexity int, userID string, matrixID string, block model.BlockType) int
-		UpdateAdmin  func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
-		UpdateRate   func(childComplexity int, id string, matrixID string) int
-		UpdateUser   func(childComplexity int, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) int
+		CreateAdmin         func(childComplexity int, matrixID string, username string, email string, password string) int
+		CreateBlock         func(childComplexity int, userID string, matrixID string, data model.DataType) int
+		CreateMatrix        func(childComplexity int, name string) int
+		CreateUser          func(childComplexity int, matrixID string, username string, email string, password string) int
+		DeleteMatrix        func(childComplexity int, id string) int
+		DeleteUser          func(childComplexity int, id string, matrixID string) int
+		MineBlock           func(childComplexity int, userID string, matrixID string, block model.BlockType, blockID string) int
+		UpdateAdmin         func(childComplexity int, id string, matrixID string, username *string, email *string, password *string) int
+		UpdateCirculation   func(childComplexity int, matrixID string, circulation float64) int
+		UpdateRate          func(childComplexity int, matrixID string, setRate float64) int
+		UpdateTotalCurrency func(childComplexity int, matrixID string, totalCurrency float64) int
+		UpdateUser          func(childComplexity int, id string, matrixID string, username *string, email *string, password *string, currentBalance *float64) int
 	}
 
 	Query struct {
 		Admin         func(childComplexity int, id string, matrixID string) int
-		Block         func(childComplexity int, num int, matrixID string, userID string) int
+		Block         func(childComplexity int, num int, matrixID string, userID string, collection *string) int
 		BlockChain    func(childComplexity int, matrixID string) int
-		Blocks        func(childComplexity int, matrixID string, userID string) int
+		Blocks        func(childComplexity int, matrixID string, userID string, collection *string) int
 		BlocksToPrint func(childComplexity int, matrixID string, userID string, collection string) int
+		GetRate       func(childComplexity int, matrixID string) int
 		Matrices      func(childComplexity int) int
 		Matrix        func(childComplexity int, id string) int
 		User          func(childComplexity int, id string, matrixID string) int
@@ -138,20 +142,23 @@ type MutationResolver interface {
 	DeleteUser(ctx context.Context, id string, matrixID string) (*model.User, error)
 	CreateAdmin(ctx context.Context, matrixID string, username string, email string, password string) (*model.Admin, error)
 	UpdateAdmin(ctx context.Context, id string, matrixID string, username *string, email *string, password *string) (*model.Admin, error)
-	UpdateRate(ctx context.Context, id string, matrixID string) (*model.Admin, error)
+	UpdateCirculation(ctx context.Context, matrixID string, circulation float64) (float64, error)
+	UpdateTotalCurrency(ctx context.Context, matrixID string, totalCurrency float64) (float64, error)
+	UpdateRate(ctx context.Context, matrixID string, setRate float64) (float64, error)
 	CreateMatrix(ctx context.Context, name string) (*model.Matrix, error)
 	DeleteMatrix(ctx context.Context, id string) (*model.Matrix, error)
 	CreateBlock(ctx context.Context, userID string, matrixID string, data model.DataType) (*model.Block, error)
-	MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType) (bool, error)
+	MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType, blockID string) (bool, error)
 }
 type QueryResolver interface {
 	Users(ctx context.Context, matrixID string) ([]*model.User, error)
 	User(ctx context.Context, id string, matrixID string) (*model.User, error)
 	Admin(ctx context.Context, id string, matrixID string) (*model.Admin, error)
+	GetRate(ctx context.Context, matrixID string) (float64, error)
 	Matrix(ctx context.Context, id string) (*model.Matrix, error)
 	Matrices(ctx context.Context) ([]*model.Matrix, error)
-	Blocks(ctx context.Context, matrixID string, userID string) ([]*model.Block, error)
-	Block(ctx context.Context, num int, matrixID string, userID string) (*model.Block, error)
+	Blocks(ctx context.Context, matrixID string, userID string, collection *string) ([]*model.Block, error)
+	Block(ctx context.Context, num int, matrixID string, userID string, collection *string) (*model.Block, error)
 	BlocksToPrint(ctx context.Context, matrixID string, userID string, collection string) ([]*model.CurrentTransaction, error)
 	BlockChain(ctx context.Context, matrixID string) ([]*model.Block, error)
 	VerifyAdmin(ctx context.Context, matrixID string, username string, password string) (*model.VerifyAdminResult, error)
@@ -172,6 +179,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 	ec := executionContext{nil, e, 0, 0, nil}
 	_ = ec
 	switch typeName + "." + field {
+
+	case "Admin.circulation":
+		if e.complexity.Admin.Circulation == nil {
+			break
+		}
+
+		return e.complexity.Admin.Circulation(childComplexity), true
 
 	case "Admin.email":
 		if e.complexity.Admin.Email == nil {
@@ -208,13 +222,6 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Admin.Privilidge(childComplexity), true
 
-	case "Admin.releaseFlow":
-		if e.complexity.Admin.ReleaseFlow == nil {
-			break
-		}
-
-		return e.complexity.Admin.ReleaseFlow(childComplexity), true
-
 	case "Admin.setRate":
 		if e.complexity.Admin.SetRate == nil {
 			break
@@ -249,6 +256,13 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Block.Data(childComplexity), true
+
+	case "Block._id":
+		if e.complexity.Block.ID == nil {
+			break
+		}
+
+		return e.complexity.Block.ID(childComplexity), true
 
 	case "Block.matrixID":
 		if e.complexity.Block.MatrixID == nil {
@@ -430,7 +444,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.MineBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["block"].(model.BlockType)), true
+		return e.complexity.Mutation.MineBlock(childComplexity, args["userID"].(string), args["matrixID"].(string), args["block"].(model.BlockType), args["blockID"].(string)), true
 
 	case "Mutation.updateAdmin":
 		if e.complexity.Mutation.UpdateAdmin == nil {
@@ -444,6 +458,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.UpdateAdmin(childComplexity, args["id"].(string), args["matrixID"].(string), args["username"].(*string), args["email"].(*string), args["password"].(*string)), true
 
+	case "Mutation.updateCirculation":
+		if e.complexity.Mutation.UpdateCirculation == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateCirculation_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateCirculation(childComplexity, args["matrixID"].(string), args["circulation"].(float64)), true
+
 	case "Mutation.updateRate":
 		if e.complexity.Mutation.UpdateRate == nil {
 			break
@@ -454,7 +480,19 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Mutation.UpdateRate(childComplexity, args["id"].(string), args["matrixID"].(string)), true
+		return e.complexity.Mutation.UpdateRate(childComplexity, args["matrixID"].(string), args["setRate"].(float64)), true
+
+	case "Mutation.updateTotalCurrency":
+		if e.complexity.Mutation.UpdateTotalCurrency == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_updateTotalCurrency_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.UpdateTotalCurrency(childComplexity, args["matrixID"].(string), args["totalCurrency"].(float64)), true
 
 	case "Mutation.updateUser":
 		if e.complexity.Mutation.UpdateUser == nil {
@@ -490,7 +528,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Block(childComplexity, args["_num"].(int), args["matrixID"].(string), args["userID"].(string)), true
+		return e.complexity.Query.Block(childComplexity, args["_num"].(int), args["matrixID"].(string), args["userID"].(string), args["collection"].(*string)), true
 
 	case "Query.BlockChain":
 		if e.complexity.Query.BlockChain == nil {
@@ -514,7 +552,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Blocks(childComplexity, args["matrixID"].(string), args["userID"].(string)), true
+		return e.complexity.Query.Blocks(childComplexity, args["matrixID"].(string), args["userID"].(string), args["collection"].(*string)), true
 
 	case "Query.BlocksToPrint":
 		if e.complexity.Query.BlocksToPrint == nil {
@@ -527,6 +565,18 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.BlocksToPrint(childComplexity, args["matrixID"].(string), args["userID"].(string), args["collection"].(string)), true
+
+	case "Query.getRate":
+		if e.complexity.Query.GetRate == nil {
+			break
+		}
+
+		args, err := ec.field_Query_getRate_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.GetRate(childComplexity, args["matrixID"].(string)), true
 
 	case "Query.Matrices":
 		if e.complexity.Query.Matrices == nil {
@@ -992,6 +1042,15 @@ func (ec *executionContext) field_Mutation_mineBlock_args(ctx context.Context, r
 		}
 	}
 	args["block"] = arg2
+	var arg3 string
+	if tmp, ok := rawArgs["blockID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("blockID"))
+		arg3, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["blockID"] = arg3
 	return args, nil
 }
 
@@ -1046,27 +1105,75 @@ func (ec *executionContext) field_Mutation_updateAdmin_args(ctx context.Context,
 	return args, nil
 }
 
-func (ec *executionContext) field_Mutation_updateRate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+func (ec *executionContext) field_Mutation_updateCirculation_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
 	var arg0 string
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
 		arg0, err = ec.unmarshalNID2string(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
-	var arg1 string
-	if tmp, ok := rawArgs["matrixID"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
-		arg1, err = ec.unmarshalNID2string(ctx, tmp)
+	args["matrixID"] = arg0
+	var arg1 float64
+	if tmp, ok := rawArgs["circulation"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("circulation"))
+		arg1, err = ec.unmarshalNFloat2float64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["matrixID"] = arg1
+	args["circulation"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateRate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg0
+	var arg1 float64
+	if tmp, ok := rawArgs["setRate"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("setRate"))
+		arg1, err = ec.unmarshalNFloat2float64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["setRate"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_updateTotalCurrency_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg0
+	var arg1 float64
+	if tmp, ok := rawArgs["totalCurrency"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("totalCurrency"))
+		arg1, err = ec.unmarshalNFloat2float64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["totalCurrency"] = arg1
 	return args, nil
 }
 
@@ -1175,6 +1282,15 @@ func (ec *executionContext) field_Query_Block_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["userID"] = arg2
+	var arg3 *string
+	if tmp, ok := rawArgs["collection"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("collection"))
+		arg3, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["collection"] = arg3
 	return args, nil
 }
 
@@ -1232,6 +1348,15 @@ func (ec *executionContext) field_Query_Blocks_args(ctx context.Context, rawArgs
 		}
 	}
 	args["userID"] = arg1
+	var arg2 *string
+	if tmp, ok := rawArgs["collection"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("collection"))
+		arg2, err = ec.unmarshalOString2ᚖstring(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["collection"] = arg2
 	return args, nil
 }
 
@@ -1286,6 +1411,21 @@ func (ec *executionContext) field_Query_admin_args(ctx context.Context, rawArgs 
 		}
 	}
 	args["matrixID"] = arg1
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_getRate_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 string
+	if tmp, ok := rawArgs["matrixID"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("matrixID"))
+		arg0, err = ec.unmarshalNID2string(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["matrixID"] = arg0
 	return args, nil
 }
 
@@ -1696,8 +1836,8 @@ func (ec *executionContext) fieldContext_Admin_privilidge(ctx context.Context, f
 	return fc, nil
 }
 
-func (ec *executionContext) _Admin_releaseFlow(ctx context.Context, field graphql.CollectedField, obj *model.Admin) (ret graphql.Marshaler) {
-	fc, err := ec.fieldContext_Admin_releaseFlow(ctx, field)
+func (ec *executionContext) _Admin_circulation(ctx context.Context, field graphql.CollectedField, obj *model.Admin) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Admin_circulation(ctx, field)
 	if err != nil {
 		return graphql.Null
 	}
@@ -1710,7 +1850,7 @@ func (ec *executionContext) _Admin_releaseFlow(ctx context.Context, field graphq
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return obj.ReleaseFlow, nil
+		return obj.Circulation, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1727,7 +1867,7 @@ func (ec *executionContext) _Admin_releaseFlow(ctx context.Context, field graphq
 	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) fieldContext_Admin_releaseFlow(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+func (ec *executionContext) fieldContext_Admin_circulation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
 	fc = &graphql.FieldContext{
 		Object:     "Admin",
 		Field:      field,
@@ -1823,6 +1963,50 @@ func (ec *executionContext) fieldContext_Admin_setRate(ctx context.Context, fiel
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Block__id(ctx context.Context, field graphql.CollectedField, obj *model.Block) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Block__id(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.ID, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(string)
+	fc.Result = res
+	return ec.marshalNID2string(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Block__id(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Block",
+		Field:      field,
+		IsMethod:   false,
+		IsResolver: false,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type ID does not have child fields")
 		},
 	}
 	return fc, nil
@@ -2227,6 +2411,8 @@ func (ec *executionContext) fieldContext_CurrentTransaction_block(ctx context.Co
 		IsResolver: false,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Block__id(ctx, field)
 			case "_num":
 				return ec.fieldContext_Block__num(ctx, field)
 			case "matrixID":
@@ -2816,8 +3002,8 @@ func (ec *executionContext) fieldContext_Mutation_createAdmin(ctx context.Contex
 				return ec.fieldContext_Admin_password(ctx, field)
 			case "privilidge":
 				return ec.fieldContext_Admin_privilidge(ctx, field)
-			case "releaseFlow":
-				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "circulation":
+				return ec.fieldContext_Admin_circulation(ctx, field)
 			case "totalCurrency":
 				return ec.fieldContext_Admin_totalCurrency(ctx, field)
 			case "setRate":
@@ -2891,8 +3077,8 @@ func (ec *executionContext) fieldContext_Mutation_updateAdmin(ctx context.Contex
 				return ec.fieldContext_Admin_password(ctx, field)
 			case "privilidge":
 				return ec.fieldContext_Admin_privilidge(ctx, field)
-			case "releaseFlow":
-				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "circulation":
+				return ec.fieldContext_Admin_circulation(ctx, field)
 			case "totalCurrency":
 				return ec.fieldContext_Admin_totalCurrency(ctx, field)
 			case "setRate":
@@ -2915,6 +3101,116 @@ func (ec *executionContext) fieldContext_Mutation_updateAdmin(ctx context.Contex
 	return fc, nil
 }
 
+func (ec *executionContext) _Mutation_updateCirculation(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateCirculation(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateCirculation(rctx, fc.Args["matrixID"].(string), fc.Args["circulation"].(float64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateCirculation(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateCirculation_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Mutation_updateTotalCurrency(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Mutation_updateTotalCurrency(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().UpdateTotalCurrency(rctx, fc.Args["matrixID"].(string), fc.Args["totalCurrency"].(float64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Mutation_updateTotalCurrency(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Mutation_updateTotalCurrency_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
 func (ec *executionContext) _Mutation_updateRate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	fc, err := ec.fieldContext_Mutation_updateRate(ctx, field)
 	if err != nil {
@@ -2929,7 +3225,7 @@ func (ec *executionContext) _Mutation_updateRate(ctx context.Context, field grap
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().UpdateRate(rctx, fc.Args["id"].(string), fc.Args["matrixID"].(string))
+		return ec.resolvers.Mutation().UpdateRate(rctx, fc.Args["matrixID"].(string), fc.Args["setRate"].(float64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -2941,9 +3237,9 @@ func (ec *executionContext) _Mutation_updateRate(ctx context.Context, field grap
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*model.Admin)
+	res := resTmp.(float64)
 	fc.Result = res
-	return ec.marshalNAdmin2ᚖmatᚑbackᚋgraphᚋmodelᚐAdmin(ctx, field.Selections, res)
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) fieldContext_Mutation_updateRate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
@@ -2953,27 +3249,7 @@ func (ec *executionContext) fieldContext_Mutation_updateRate(ctx context.Context
 		IsMethod:   true,
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
-			switch field.Name {
-			case "_id":
-				return ec.fieldContext_Admin__id(ctx, field)
-			case "matrixID":
-				return ec.fieldContext_Admin_matrixID(ctx, field)
-			case "username":
-				return ec.fieldContext_Admin_username(ctx, field)
-			case "email":
-				return ec.fieldContext_Admin_email(ctx, field)
-			case "password":
-				return ec.fieldContext_Admin_password(ctx, field)
-			case "privilidge":
-				return ec.fieldContext_Admin_privilidge(ctx, field)
-			case "releaseFlow":
-				return ec.fieldContext_Admin_releaseFlow(ctx, field)
-			case "totalCurrency":
-				return ec.fieldContext_Admin_totalCurrency(ctx, field)
-			case "setRate":
-				return ec.fieldContext_Admin_setRate(ctx, field)
-			}
-			return nil, fmt.Errorf("no field named %q was found under type Admin", field.Name)
+			return nil, errors.New("field of type Float does not have child fields")
 		},
 	}
 	defer func() {
@@ -3151,6 +3427,8 @@ func (ec *executionContext) fieldContext_Mutation_createBlock(ctx context.Contex
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Block__id(ctx, field)
 			case "_num":
 				return ec.fieldContext_Block__num(ctx, field)
 			case "matrixID":
@@ -3199,7 +3477,7 @@ func (ec *executionContext) _Mutation_mineBlock(ctx context.Context, field graph
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Mutation().MineBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["block"].(model.BlockType))
+		return ec.resolvers.Mutation().MineBlock(rctx, fc.Args["userID"].(string), fc.Args["matrixID"].(string), fc.Args["block"].(model.BlockType), fc.Args["blockID"].(string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3429,8 +3707,8 @@ func (ec *executionContext) fieldContext_Query_admin(ctx context.Context, field 
 				return ec.fieldContext_Admin_password(ctx, field)
 			case "privilidge":
 				return ec.fieldContext_Admin_privilidge(ctx, field)
-			case "releaseFlow":
-				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "circulation":
+				return ec.fieldContext_Admin_circulation(ctx, field)
 			case "totalCurrency":
 				return ec.fieldContext_Admin_totalCurrency(ctx, field)
 			case "setRate":
@@ -3447,6 +3725,61 @@ func (ec *executionContext) fieldContext_Query_admin(ctx context.Context, field 
 	}()
 	ctx = graphql.WithFieldContext(ctx, fc)
 	if fc.Args, err = ec.field_Query_admin_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
+		ec.Error(ctx, err)
+		return fc, err
+	}
+	return fc, nil
+}
+
+func (ec *executionContext) _Query_getRate(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	fc, err := ec.fieldContext_Query_getRate(ctx, field)
+	if err != nil {
+		return graphql.Null
+	}
+	ctx = graphql.WithFieldContext(ctx, fc)
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().GetRate(rctx, fc.Args["matrixID"].(string))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(float64)
+	fc.Result = res
+	return ec.marshalNFloat2float64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) fieldContext_Query_getRate(ctx context.Context, field graphql.CollectedField) (fc *graphql.FieldContext, err error) {
+	fc = &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		IsMethod:   true,
+		IsResolver: true,
+		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
+			return nil, errors.New("field of type Float does not have child fields")
+		},
+	}
+	defer func() {
+		if r := recover(); r != nil {
+			err = ec.Recover(ctx, r)
+			ec.Error(ctx, err)
+		}
+	}()
+	ctx = graphql.WithFieldContext(ctx, fc)
+	if fc.Args, err = ec.field_Query_getRate_args(ctx, field.ArgumentMap(ec.Variables)); err != nil {
 		ec.Error(ctx, err)
 		return fc, err
 	}
@@ -3578,7 +3911,7 @@ func (ec *executionContext) _Query_Blocks(ctx context.Context, field graphql.Col
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Blocks(rctx, fc.Args["matrixID"].(string), fc.Args["userID"].(string))
+		return ec.resolvers.Query().Blocks(rctx, fc.Args["matrixID"].(string), fc.Args["userID"].(string), fc.Args["collection"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3603,6 +3936,8 @@ func (ec *executionContext) fieldContext_Query_Blocks(ctx context.Context, field
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Block__id(ctx, field)
 			case "_num":
 				return ec.fieldContext_Block__num(ctx, field)
 			case "matrixID":
@@ -3651,7 +3986,7 @@ func (ec *executionContext) _Query_Block(ctx context.Context, field graphql.Coll
 	}()
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Block(rctx, fc.Args["_num"].(int), fc.Args["matrixID"].(string), fc.Args["userID"].(string))
+		return ec.resolvers.Query().Block(rctx, fc.Args["_num"].(int), fc.Args["matrixID"].(string), fc.Args["userID"].(string), fc.Args["collection"].(*string))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -3676,6 +4011,8 @@ func (ec *executionContext) fieldContext_Query_Block(ctx context.Context, field 
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Block__id(ctx, field)
 			case "_num":
 				return ec.fieldContext_Block__num(ctx, field)
 			case "matrixID":
@@ -3812,6 +4149,8 @@ func (ec *executionContext) fieldContext_Query_BlockChain(ctx context.Context, f
 		IsResolver: true,
 		Child: func(ctx context.Context, field graphql.CollectedField) (*graphql.FieldContext, error) {
 			switch field.Name {
+			case "_id":
+				return ec.fieldContext_Block__id(ctx, field)
 			case "_num":
 				return ec.fieldContext_Block__num(ctx, field)
 			case "matrixID":
@@ -4456,8 +4795,8 @@ func (ec *executionContext) fieldContext_VerifyAdminResult_admin(ctx context.Con
 				return ec.fieldContext_Admin_password(ctx, field)
 			case "privilidge":
 				return ec.fieldContext_Admin_privilidge(ctx, field)
-			case "releaseFlow":
-				return ec.fieldContext_Admin_releaseFlow(ctx, field)
+			case "circulation":
+				return ec.fieldContext_Admin_circulation(ctx, field)
 			case "totalCurrency":
 				return ec.fieldContext_Admin_totalCurrency(ctx, field)
 			case "setRate":
@@ -6514,8 +6853,8 @@ func (ec *executionContext) _Admin(ctx context.Context, sel ast.SelectionSet, ob
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
-		case "releaseFlow":
-			out.Values[i] = ec._Admin_releaseFlow(ctx, field, obj)
+		case "circulation":
+			out.Values[i] = ec._Admin_circulation(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
@@ -6563,6 +6902,11 @@ func (ec *executionContext) _Block(ctx context.Context, sel ast.SelectionSet, ob
 		switch field.Name {
 		case "__typename":
 			out.Values[i] = graphql.MarshalString("Block")
+		case "_id":
+			out.Values[i] = ec._Block__id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "_num":
 			out.Values[i] = ec._Block__num(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
@@ -6822,6 +7166,20 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			if out.Values[i] == graphql.Null {
 				out.Invalids++
 			}
+		case "updateCirculation":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateCirculation(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
+		case "updateTotalCurrency":
+			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
+				return ec._Mutation_updateTotalCurrency(ctx, field)
+			})
+			if out.Values[i] == graphql.Null {
+				out.Invalids++
+			}
 		case "updateRate":
 			out.Values[i] = ec.OperationContext.RootResolverMiddleware(innerCtx, func(ctx context.Context) (res graphql.Marshaler) {
 				return ec._Mutation_updateRate(ctx, field)
@@ -6953,6 +7311,28 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_admin(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&fs.Invalids, 1)
+				}
+				return res
+			}
+
+			rrm := func(ctx context.Context) graphql.Marshaler {
+				return ec.OperationContext.RootResolverMiddleware(ctx,
+					func(ctx context.Context) graphql.Marshaler { return innerFunc(ctx, out) })
+			}
+
+			out.Concurrently(i, func(ctx context.Context) graphql.Marshaler { return rrm(innerCtx) })
+		case "getRate":
+			field := field
+
+			innerFunc := func(ctx context.Context, fs *graphql.FieldSet) (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_getRate(ctx, field)
 				if res == graphql.Null {
 					atomic.AddUint32(&fs.Invalids, 1)
 				}

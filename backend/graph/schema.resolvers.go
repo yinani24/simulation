@@ -15,6 +15,7 @@ import (
 
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 )
 
@@ -49,24 +50,29 @@ func (r *mutationResolver) UpdateUser(ctx context.Context, id string, matrixID s
 	new_email := User.Email
 	new_username := User.Username
 	new_password := User.Password
+	new_currentBalance := User.CurrentBalance
 
-	if *email != "" {
+	if email != nil && *email != "" {
 		new_email = *email
 	}
-	if *username != "" {
+	if username != nil && *username != "" {
 		new_username = *username
 	}
-	if *password != "" {
+	if password != nil && *password != "" {
 		new_password = *password
 	}
-
+	if currentBalance != nil {
+		new_currentBalance += *currentBalance
+	}
+	log.Print("The new current balance is: \n", new_currentBalance)
+	log.Print("In the User update function\n")
 	model_user := model.User{
 		ID:             id,
 		MatrixID:       matrixID,
 		Email:          new_email,
 		Password:       new_password,
 		Username:       new_username,
-		CurrentBalance: User.CurrentBalance,
+		CurrentBalance: new_currentBalance,
 	}
 
 	print("in the Update User function \n\n\n")
@@ -94,6 +100,10 @@ func (r *mutationResolver) DeleteUser(ctx context.Context, id string, matrixID s
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = Mongo_db.Client.Database(matrix.Name).Collection(user.Username + "MineBlocks").Drop(ctx)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	Post_Sql.DB.Where("id = ? AND matrix_id = ?", id, matrixID).Unscoped().Delete(&model.User{})
 	return &user, nil
@@ -105,7 +115,7 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, use
 	Post_Sql.DB.Model(&model.Admin{}).Where("matrix_id = ? AND username = ? AND password = ?", matrixID, username, password).Count(&count)
 
 	if count > 0 {
-		return nil, fmt.Errorf("user already exists")
+		return nil, fmt.Errorf("Admin already exists")
 	}
 
 	model_admin := model.Admin{
@@ -118,7 +128,6 @@ func (r *mutationResolver) CreateAdmin(ctx context.Context, matrixID string, use
 	}
 
 	Post_Sql.DB.Create(&model_admin)
-
 	return &model_admin, nil
 }
 
@@ -128,6 +137,7 @@ func (r *mutationResolver) UpdateAdmin(ctx context.Context, id string, matrixID 
 	if err := Post_Sql.DB.First(&Admin, "id = ?", id).Error; err != nil {
 		return nil, err
 	}
+
 	new_email := Admin.Email
 	new_username := Admin.Username
 	new_password := Admin.Password
@@ -151,15 +161,58 @@ func (r *mutationResolver) UpdateAdmin(ctx context.Context, id string, matrixID 
 		Privilidge: Admin.Privilidge,
 	}
 
-	print("in the Update User function \n\n\n")
-
+	print("in the Update Admin function \n\n\n")
 	Post_Sql.DB.Model(&Admin).Updates(&model_admin)
 	return &model_admin, nil
 }
 
+// UpdateCirculation is the resolver for the updateCirculation field.
+func (r *mutationResolver) UpdateCirculation(ctx context.Context, matrixID string, circulation float64) (float64, error) {
+	var admin model.Admin
+	Post_Sql.DB.Where("matrix_id = ?", matrixID).Find(&admin)
+	if circulation > 0.0 {
+		admin.Circulation += circulation
+	} else {
+		admin.Circulation = circulation
+	}
+
+	if admin.TotalCurrency > 0.0 {
+		admin.SetRate = admin.Circulation / admin.TotalCurrency
+	} else {
+		admin.SetRate = 0.0
+	}
+
+	Post_Sql.DB.Save(&admin)
+	return admin.SetRate, nil
+}
+
+// UpdateTotalCurrency is the resolver for the updateTotalCurrency field.
+func (r *mutationResolver) UpdateTotalCurrency(ctx context.Context, matrixID string, totalCurrency float64) (float64, error) {
+	var admin model.Admin
+	Post_Sql.DB.Where("matrix_id = ?", matrixID).Find(&admin)
+	if totalCurrency > 0.0 {
+		admin.TotalCurrency += totalCurrency
+	} else {
+		admin.TotalCurrency = totalCurrency
+	}
+
+	if admin.Circulation > 0.0 {
+		admin.SetRate = admin.Circulation / admin.TotalCurrency
+	} else {
+		admin.SetRate = 0.0
+	}
+
+	Post_Sql.DB.Save(&admin)
+	return admin.SetRate, nil
+}
+
 // UpdateRate is the resolver for the updateRate field.
-func (r *mutationResolver) UpdateRate(ctx context.Context, id string, matrixID string) (*model.Admin, error) {
-	panic(fmt.Errorf("not implemented: UpdateRate - updateRate"))
+func (r *mutationResolver) UpdateRate(ctx context.Context, matrixID string, setRate float64) (float64, error) {
+	var admin model.Admin
+	Post_Sql.DB.Where("matrix_id = ?", matrixID).Find(&admin)
+	admin.SetRate = setRate
+	Post_Sql.DB.Save(&admin)
+	return admin.SetRate, nil
 }
 
 // CreateMatrix is the resolver for the createMatrix field.
@@ -252,7 +305,7 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	/*
 		Most Recent block from the blockchain is taken to update the num value for the number of the block
 	*/
-	
+
 	var highestBlock model.Block = Mongo_db.GetHighestFromBlockChain(matrix.Name, "BlockChain")
 	newNum := highestBlock.Num + 1
 
@@ -307,16 +360,20 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	log.Print(new_collection)
 
 	userTransaction := Mongo_db.Client.Database(matrix.Name).Collection(new_collection)
-	_, err = userTransaction.InsertOne(ctx, returnBlock)
+	inserg, err := userTransaction.InsertOne(ctx, returnBlock)
 	if err != nil {
 		log.Fatal(err)
 	}
+
+	insertedID := inserg.InsertedID.(primitive.ObjectID).Hex()
+	log.Print("The inserted ID is: ", insertedID)
+	returnBlock.ID = insertedID
 
 	return &returnBlock, nil
 }
 
 // MineBlock is the resolver for the mineBlock field.
-func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType) (bool, error) {
+func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixID string, block model.BlockType, blockID string) (bool, error) {
 	var user model.User
 	var matrix model.Matrix
 	var count int64
@@ -372,7 +429,7 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 	}
 
 	store := database.IsBlockValid(oldBlock, newBlock)
-	
+
 	/*
 		After verifying the block is valid, update the current block collection, mine block and blockchain respectively and the user's current balance after 50% people have approved it
 	*/
@@ -381,7 +438,7 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 		/*
 			Delete from the Mine Block for the user after it has been verified
 		*/
-		Mongo_db.DeleteBlockFromMineBlock(matrix.Name, new_collection, "2")
+		Mongo_db.DeleteBlockFromMineBlock(matrix.Name, new_collection, blockID)
 		/*
 			Update the from and to user with the balance amount after more than 50% people have verified the block
 		*/
@@ -394,13 +451,14 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 			to_user.CurrentBalance += block.Data.Amount
 			Post_Sql.DB.Save(&from_user)
 			Post_Sql.DB.Save(&to_user)
+			Mongo_db.AddToPreviosTransactions(matrix.Name, block.Data.From, newBlock)
 			/*
 				Also perform the update of in CurrentBlock and MineBlock of each individual user with the new values of prev hash and num
 				after getting the value of the new highest block from the blockchain
 			*/
 			var highestBlock model.Block = Mongo_db.GetHighestFromBlockChain(matrix.Name, "BlockChain")
-			Mongo_db.Update(matrix.Name, "CurrentBlock", highestBlock.Num, highestBlock.Current)
-			Mongo_db.Update(matrix.Name, new_collection, highestBlock.Num, highestBlock.Current)
+			Mongo_db.UpdateCurrentBlock(matrix.Name, "CurrentBlock", highestBlock.Num, highestBlock.Current)
+			Mongo_db.UpdateMineBlock(matrix.Name, new_collection, highestBlock.Num, highestBlock.Current)
 		}
 		return true, nil
 	} else {
@@ -429,6 +487,13 @@ func (r *queryResolver) Admin(ctx context.Context, id string, matrixID string) (
 	return &admin, nil
 }
 
+// GetRate is the resolver for the getRate field.
+func (r *queryResolver) GetRate(ctx context.Context, matrixID string) (float64, error) {
+	var admin model.Admin
+	Post_Sql.DB.Where("matrix_id = ?", matrixID).Find(&admin)
+	return admin.SetRate, nil
+}
+
 // Matrix is the resolver for the Matrix field.
 func (r *queryResolver) Matrix(ctx context.Context, id string) (*model.Matrix, error) {
 	var matrix model.Matrix
@@ -444,14 +509,18 @@ func (r *queryResolver) Matrices(ctx context.Context) ([]*model.Matrix, error) {
 }
 
 // Blocks is the resolver for the Blocks field.
-func (r *queryResolver) Blocks(ctx context.Context, matrixID string, userID string) ([]*model.Block, error) {
+func (r *queryResolver) Blocks(ctx context.Context, matrixID string, userID string, collection *string) ([]*model.Block, error) {
 	var user model.User
 	var matrix model.Matrix
 
 	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
+	new_collection := user.Username
+	if collection != nil {
+		new_collection += *collection
+	}
 
-	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
+	client := Mongo_db.Client.Database(matrix.Name).Collection(new_collection)
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 
@@ -475,7 +544,7 @@ func (r *queryResolver) Blocks(ctx context.Context, matrixID string, userID stri
 }
 
 // Block is the resolver for the Block field.
-func (r *queryResolver) Block(ctx context.Context, num int, matrixID string, userID string) (*model.Block, error) {
+func (r *queryResolver) Block(ctx context.Context, num int, matrixID string, userID string, collection *string) (*model.Block, error) {
 	var user model.User
 	var matrix model.Matrix
 
