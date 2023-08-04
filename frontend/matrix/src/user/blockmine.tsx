@@ -49,6 +49,7 @@ function BlockMine(){
     const handleMine = async (block: BlockType, id: string) => {
         try{
             const newBlockwithoutid = {_num: block._num, prev: block.prev, current: block.current, data: block.data, nounce: block.nounce, verify: block.verify}
+            console.log(newBlockwithoutid)
             const response = await mineBlock({variables: {
                 userID: localStorage.getItem("userId"),
                 matrixID: localStorage.getItem("matrix_id"),
@@ -76,6 +77,7 @@ function BlockMine(){
                         <p>Amount: {block.data.amount}</p>
                         <p>Prev: {block.prev}</p>
                         <p>Current: {block.current}</p>
+                        <p>Nounce: {block.nounce}</p>
                         <button onClick={() => handleMine(block, block._id)}> Mine </button>
                     </div>
                 ))}

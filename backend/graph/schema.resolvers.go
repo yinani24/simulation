@@ -16,7 +16,7 @@ import (
 	"github.com/google/uuid"
 	"go.mongodb.org/mongo-driver/bson"
 	"go.mongodb.org/mongo-driver/bson/primitive"
-	"go.mongodb.org/mongo-driver/mongo"
+	// "go.mongodb.org/mongo-driver/mongo"
 )
 
 // CreateUser is the resolver for the createUser field.
@@ -388,11 +388,12 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 		Get the current block from the current block collection
 	*/
 	var oldBlock model.Block = Mongo_db.GetHighestFromBlockChain(matrix.Name, "BlockChain")
-
 	/*
 		Verify the block to be mined verifies with the previous block of the block chain
 	*/
+	// log.Print("The block values are", block.Current, " ", block.Prev, " ", block.Num, " ", block.Data.From, " ", block.Data.To, " ", block.Data.Amount, " ", block.Nounce)
 	newBlock := model.Block{
+		ID:       blockID,
 		Num:      block.Num,
 		UserID:   userID,
 		MatrixID: matrixID,
@@ -403,7 +404,10 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 		},
 		Prev:    block.Prev,
 		Current: block.Current,
+		Nounce: block.Nounce,
 	}
+
+	//print("The new block is: ", newBlock.Current, " ", newBlock.Prev, " ", newBlock.Num)
 
 	store := database.IsBlockValid(oldBlock, newBlock)
 

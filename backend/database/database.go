@@ -149,8 +149,8 @@ func ConnecttoMongoDB() (MongoDB) {
 	}
 }
 
-func IsBlockValid(newBlock, oldBlock model.Block) bool {
-	if oldBlock.Num+1 != newBlock.Num {
+func IsBlockValid(oldBlock, newBlock model.Block) bool {
+	if (oldBlock.Num + 1) != newBlock.Num {
 		log.Print("Block Number is not valid 1")
 		return false
 	}
@@ -161,6 +161,7 @@ func IsBlockValid(newBlock, oldBlock model.Block) bool {
 	}
 
 	if HashCalculator(newBlock) != newBlock.Current {
+		log.Print("New Block Current: ", newBlock.Current)
 		log.Print("Block Number is not valid 3")
 		return false
 	}
@@ -174,6 +175,7 @@ func HashCalculator(block model.Block) string {
 	h := sha256.New()
 	h.Write([]byte(record))
 	hashed := h.Sum(nil)
+	log.Print("Hashed Value from new_block: ", hex.EncodeToString(hashed))
 	return hex.EncodeToString(hashed)
 }
 
@@ -286,7 +288,8 @@ func (M * MongoDB) GetHighestFromBlockChain(matrixName string, collection string
 }
 
 func (M * MongoDB) DeleteBlockFromMineBlock(matrixName string, collection string, id string){
-	_, err := M.Client.Database(matrixName).Collection(collection).DeleteOne(context.Background(), bson.D{{Key: "_id", Value: id}})
+	_id, _ := primitive.ObjectIDFromHex(id)
+	_, err := M.Client.Database(matrixName).Collection(collection).DeleteOne(context.Background(), bson.D{{Key: "_id", Value: _id}})
 	if err != nil {
 		log.Fatal(err)
 	}
