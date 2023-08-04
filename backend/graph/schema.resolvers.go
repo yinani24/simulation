@@ -387,30 +387,7 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 	/*
 		Get the current block from the current block collection
 	*/
-	blockchain := Mongo_db.Client.Database(matrix.Name).Collection("BlockChain")
-	ctx, cancel := context.WithTimeout(context.Background(), 100*time.Second)
-	defer cancel()
-
-	pipeline := mongo.Pipeline{
-		{{Key: "$sort", Value: bson.D{{Key: "Num", Value: -1}}}},
-		{{Key: "$limit", Value: 1}},
-	}
-
-	cur, error_ := blockchain.Aggregate(context.Background(), pipeline)
-
-	if error_ != nil {
-		log.Fatal(error_)
-	}
-
-	defer cur.Close(context.Background())
-
-	var oldBlock model.Block
-	for cur.Next(context.Background()) {
-		err := cur.Decode(&oldBlock)
-		if err != nil {
-			log.Fatal(err)
-		}
-	}
+	var oldBlock model.Block = Mongo_db.GetHighestFromBlockChain(matrix.Name, "BlockChain")
 
 	/*
 		Verify the block to be mined verifies with the previous block of the block chain

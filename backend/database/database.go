@@ -151,14 +151,17 @@ func ConnecttoMongoDB() (MongoDB) {
 
 func IsBlockValid(newBlock, oldBlock model.Block) bool {
 	if oldBlock.Num+1 != newBlock.Num {
+		log.Print("Block Number is not valid 1")
 		return false
 	}
 
 	if oldBlock.Current != newBlock.Prev {
+		log.Print("Block Number is not valid 2")
 		return false
 	}
 
 	if HashCalculator(newBlock) != newBlock.Current {
+		log.Print("Block Number is not valid 3")
 		return false
 	}
 

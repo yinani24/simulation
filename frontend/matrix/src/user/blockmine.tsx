@@ -36,7 +36,7 @@ function BlockMine(){
     }`;
 
     const MINE_BLOCK = gql`
-    mutation MineBlock($userID: ID!, $matrixID: ID!, $block : BlockType!, $blockID: string){
+    mutation MineBlock($userID: ID!, $matrixID: ID!, $block: BlockType!, $blockID: ID!){
         mineBlock(userID: $userID, matrixID: $matrixID, block: $block, blockID: $blockID)
     }`;
 
@@ -76,7 +76,7 @@ function BlockMine(){
                         <p>Amount: {block.data.amount}</p>
                         <p>Prev: {block.prev}</p>
                         <p>Current: {block.current}</p>
-                        <button onClick={() => handleMine}> Mine </button>
+                        <button onClick={() => handleMine(block, block._id)}> Mine </button>
                     </div>
                 ))}
             </div>      
