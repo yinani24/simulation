@@ -2,17 +2,22 @@ package database
 
 import (
 	"context"
-	"mat-back/graph/model"
-	// "database/sql"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
+	"mat-back/graph/model"
+	"math/rand"
 	"os"
 	"strconv"
-
+	"time"
 	_ "github.com/go-sql-driver/mysql"
 	"github.com/joho/godotenv"
+	"go.mongodb.org/mongo-driver/bson"
+	"go.mongodb.org/mongo-driver/bson/primitive"
 	"go.mongodb.org/mongo-driver/mongo"
 	"go.mongodb.org/mongo-driver/mongo/options"
+	"go.mongodb.org/mongo-driver/mongo/readpref"
 	"gorm.io/driver/postgres"
 	"gorm.io/gorm"
 )
@@ -22,12 +27,11 @@ type MongoDB struct {
 }
 
 type PostSql struct {
-	db *gorm.DB
+	DB *gorm.DB
 }
 
-// Database is the struct for the database.
-
-func ConnecttoPostSql() (PostSql, error) {
+// Make the 3 sql databases
+func ConnecttoPostSql(M string, models ... interface{}) (PostSql) {
 	dotenvErr := godotenv.Load()
 	
 	if dotenvErr != nil {
@@ -36,44 +40,77 @@ func ConnecttoPostSql() (PostSql, error) {
 
 	host := os.Getenv("HOST")
 	portStr := os.Getenv("PORT")
-	port, err := strconv.Atoi(portStr)
 	user := os.Getenv("USER")
 	password := os.Getenv("PASSWORD")
-	dbname := os.Getenv("DBNAME")
 
-	dsn := fmt.Sprintf("host=%s port=%d user=%s password=%s dbname=%s sslmode=disable", host, port, user, password, dbname)
+	//Simulation Matrix
+	dsn := fmt.Sprintf("host=%s port=%s user=%s password=%s sslmode=disable", host, portStr, user, password)
 	db, err := gorm.Open(postgres.Open(dsn), &gorm.Config{})
-	
+
 	if err != nil {
 		log.Fatal(err)
 	}
 
+	Post := PostSql{
+		DB: db,
+	}
+
+	exists, error1 := Post.CheckDatabaseExists(M)
+	log.Print("Exists Value: \n", exists)
+
+	if error1 != nil {
+		log.Fatal(error1)
+	}
+	if !exists {
+		Post.CreateDatabase(M)
+		Post.MigratePostgreSQLSchema(models...)
+	}
+
 	return PostSql{
-		db: db,
-	}, nil
+		DB: db,
+	}
 }
 
-//may need to rewrite this function do look through this
-func MigratePostgreSQLSchema(p PostSql, models ...interface{}) error {
-	db := p.db
-	err := db.AutoMigrate(models...)
+/*
+	Used to Migrate the schema of the models to the Postgres Database i.e Matrix, User and Admin
+*/
+func (p * PostSql) MigratePostgreSQLSchema(models ...interface{}) error {
+	err := p.DB.AutoMigrate(models...)
 	if err != nil {
 		return err
 	}
 	return nil
 }
 
-func CreatePostgreSQLDatabase(p PostSql, databaseName string) *gorm.DB{
-	db := p.db
-	result := db.Exec(fmt.Sprintf("CREATE DATABASE %s", databaseName))
+/*
+	To check if the database exists or not
+*/
+func (p * PostSql) CheckDatabaseExists(dbName string) (bool, error) {
+	var count int64
+	result := p.DB.Raw("SELECT COUNT(datname) FROM pg_database WHERE datname = ?", dbName).Scan(&count)
 	if result.Error != nil {
-		return nil
+		return false, result.Error
 	}
-	return result
+	log.Print(result)
+	log.Print(count)
+	return count > 0, nil
 }
 
-func DeletePostgreSQLDatabase(p PostSql, databaseName string) error {
-	db := p.db
+/*
+	To create the database for the first time
+*/
+func (p * PostSql) CreateDatabase(dbName string) error {
+	database := fmt.Sprintf("CREATE DATABASE %s", dbName)
+	result := p.DB.Exec(database)
+	return result.Error
+}
+
+/*
+	To delete the database
+*/
+
+func (p * PostSql) DeletePostgreSQLDatabase(databaseName string) error {
+	db := p.DB
 	result := db.Exec(fmt.Sprintf("DROP DATABASE IF EXISTS %s", databaseName))
 	if result.Error != nil {
 		return result.Error
@@ -81,58 +118,265 @@ func DeletePostgreSQLDatabase(p PostSql, databaseName string) error {
 	return nil
 }
 
-func ConnecttoMongoDB() (MongoDB, error) {
+func ConnecttoMongoDB() (MongoDB) {
 	// Connect to the database.
 	dotenv_err := godotenv.Load()
 	if dotenv_err != nil {
 	  log.Fatal("Error loading .env file")
 	}
 
-	mongodb := os.Getenv("MONGODB")
+	mongodb := os.Getenv("MONGODB_URI")
 	client, error := mongo.NewClient(options.Client().ApplyURI(mongodb))
+	
 	if error != nil {
+		print("Hello here 1")
 		log.Fatal(error)
 	}
-	err := client.Ping(context.TODO(), nil)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	err := client.Connect(ctx)
 	if err != nil {
 		log.Fatal(err)
 	}
+	err = client.Ping(ctx, readpref.Primary())
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	return 	MongoDB{	
 		Client: client,
-	}, nil
-}
-
-//InsertMongoDB inserts a query into the database
-func InsertMongoDB(M MongoDB, databaseName string, collection string, ctx context.Context, query interface{})  *mongo.InsertOneResult{
-	client := M.Client
-	mat, err := client.Database(databaseName).Collection(collection).InsertOne(ctx, query)
-	if err != nil{
-		return nil
-	}
-	return mat
-}
-
-func DeleteMongoDB(M MongoDB, databaseName string, collection string, ctx context.Context, query interface{}) (result *mongo.DeleteResult, err error){
-	client := M.Client
-	result, err = client.Database(databaseName).Collection(collection).DeleteOne(ctx, query)
-	return 
-}
-
-func createMatrix(post * PostSql, Mongo * MongoDB, M string) *model.Matrix{
-	userpostgres := CreatePostgreSQLDatabase(*post, M)
-	if userpostgres != nil{
-		return nil
-	}
-	mongodb := Mongo.Client.Database(M).Collection("blocks")
-	if mongodb != nil{
-		return nil
-	}
-	return &model.Matrix{
-		Name: M,
-		Userdatabase: userpostgres,
-		Mongo: mongodb,
 	}
 }
 
+func IsBlockValid(oldBlock, newBlock model.Block) bool {
+	if (oldBlock.Num + 1) != newBlock.Num {
+		//log.Print("Block Number is not valid 1")
+		return false
+	}
+
+	if oldBlock.Current != newBlock.Prev {
+		//log.Print("Block Number is not valid 2")
+		return false
+	}
+
+	if HashCalculator(newBlock) != newBlock.Current {
+		//log.Print("New Block Current: ", newBlock.Current)
+		//log.Print("Block Number is not valid 3")
+		return false
+	}
+
+	return true
+}
+
+func HashCalculator(block model.Block) string {
+	//Hashing function
+	record := strconv.Itoa(block.Nounce) + block.Data.From + strconv.FormatFloat(block.Data.Amount, 'f', 10, 64) + block.Data.To + block.Prev
+	h := sha256.New()
+	h.Write([]byte(record))
+	hashed := h.Sum(nil)
+	//log.Print("Hashed Value from new_block: ", hex.EncodeToString(hashed))
+	return hex.EncodeToString(hashed)
+}
+
+// func generateKeyPair() (*ecdsa.PrivateKey, *ecdsa.PublicKey, error) {
+// 	// Generate a random private key
+// 	privateKey, err := ecdsa.GenerateKey(elliptic.P256(), rand.Reader)
+// 	if err != nil {
+// 		return nil, nil, err
+// 	}
+
+// 	// Derive the public key from the private key
+// 	publicKey := &privateKey.PublicKey
+
+// 	return privateKey, publicKey, nil
+// }
+
+// func PrivatePublicKey() {
+// 	privateKey, publicKey, err := generateKeyPair()
+// 	if err != nil {
+// 		log.Fatal(err)
+// 	}
+
+// 	// Serialize the public key to hex
+// 	publicKeyBytes := elliptic.Marshal(publicKey.Curve, publicKey.X, publicKey.Y)
+// 	publicKeyHex := hex.EncodeToString(publicKeyBytes)
+
+// 	fmt.Println("Private Key:", privateKey)
+// 	fmt.Println("Public Key:", publicKeyHex)
+// }
 
 
+func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64, userID string, matrixID string, Current string) (bool){
+	/*
+		Open the CurrentBlock Collection and find the block we recieved from the user.
+	*/
+	client := M.Client.Database(matrixName).Collection(collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	
+	filter := bson.D{
+		{Key: "block.current", Value: Current},
+		{Key: "block.matrixID", Value: matrixID},
+		{Key: "block.userID", Value: userID},
+	}
+	
+	var dataBlock model.CurrentTransaction
+	err := client.FindOne(ctx, filter).Decode(&dataBlock)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			fmt.Println("Document not found")
+			return false
+		} else {
+			log.Fatal(err)
+			return false
+		}
+	}
+
+	/*
+		Update the count of people mining this block in the CurrentBlock Collection
+	*/
+
+	change := (dataBlock.Percent * float64(count) + 1)/float64(count)
+	dataBlock.Percent = change
+	/*
+		This part basically checks if the Current Block collection has reached 50% of the total mine.
+		If yes then it removes the block from the Current Block collection and adds it to the Blockchain collection.
+		or else it just updates the current block collection with the new percent value.
+	*/
+	if dataBlock.Percent > 0.5{
+		var insertBlock model.Block = *dataBlock.Block
+		insertBlock.Verify = true
+		blockchain := M.Client.Database(matrixName).Collection("BlockChain")
+		_, err := blockchain.InsertOne(ctx, insertBlock)
+		if err != nil {
+			log.Fatal(err)
+		}
+		client.DeleteOne(ctx, filter)
+		return true
+	}else{
+		update := bson.D{{Key: "$set", Value: bson.D{{Key: "percent", Value: dataBlock.Percent}}}}
+		_, err := client.UpdateOne(ctx, filter, update)
+		if err != nil {
+			log.Fatal(err)
+		}
+		return false
+	}
+}
+
+func (M * MongoDB) GetHighestFromBlockChain(matrixName string, collection string) (model.Block){
+	blockchain := M.Client.Database(matrixName).Collection(collection)
+	_, cancel := context.WithTimeout(context.Background(), 60*time.Second)
+
+	defer cancel()
+
+	pipeline := mongo.Pipeline{
+		{{Key: "$sort", Value: bson.D{{Key: "_num", Value: -1}}}},
+		{{Key: "$limit", Value: 1}},
+	}
+
+	cur, error_ := blockchain.Aggregate(context.Background(), pipeline)
+	if error_ != nil {
+		log.Fatal(error_)
+	}
+	defer cur.Close(context.Background())
+
+	var highestBlock model.Block
+	for cur.Next(context.Background()) {
+		err := cur.Decode(&highestBlock)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	return highestBlock
+}
+
+func (M * MongoDB) DeleteBlockFromMineBlock(matrixName string, collection string, id string){
+	_id, _ := primitive.ObjectIDFromHex(id)
+	_, err := M.Client.Database(matrixName).Collection(collection).DeleteOne(context.Background(), bson.D{{Key: "_id", Value: _id}})
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func (M * MongoDB) UpdateMineBlock(matrixName string, collection string, num int, prev string){
+	coll := M.Client.Database(matrixName).Collection(collection)
+	cursor, err := coll.Find(context.TODO(), bson.D{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	var block model.Block
+	for cursor.Next(context.TODO()) {	
+		var result bson.M	
+		if err := cursor.Decode(&block); err != nil {
+			log.Fatal(err)
+		}
+		if err = cursor.Decode(&result); err != nil {
+			log.Fatal(err)
+		}
+		//fmt.Println(block)
+		id := result["_id"].(primitive.ObjectID)
+		block.Num = num
+		block.Prev = prev
+		update := bson.M{
+			"$set": bson.M{
+				"prev":    prev,
+				"_num":    num,
+				"current": HashCalculator(block),
+			},
+		}
+		_, err := coll.UpdateOne(context.Background(), bson.M{"_id": id}, update)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func (M * MongoDB) UpdateCurrentBlock(matrixName string, collection string, num int, prev string){
+	coll := M.Client.Database(matrixName).Collection(collection)
+	cursor, err := coll.Find(context.TODO(), bson.D{})
+
+	if err != nil {
+		log.Fatal(err)
+	}
+	var block model.CurrentTransaction
+	for cursor.Next(context.TODO()) {	
+		var result bson.M	
+		if err := cursor.Decode(&block); err != nil {
+			log.Fatal(err)
+		}
+		if err = cursor.Decode(&result); err != nil {
+			log.Fatal(err)
+		}
+		fmt.Println(block)
+		id := result["_id"].(primitive.ObjectID)
+		block.Block.Num = num
+		block.Block.Prev = prev
+		update := bson.M{
+			"$set": bson.M{
+				"block.prev":    prev,
+				"block._num":    num,
+				"block.current": HashCalculator(*block.Block),
+			},
+		}
+		_, err := coll.UpdateOne(context.Background(), bson.M{"_id": id}, update)
+		if err != nil {
+			log.Fatal(err)
+		}
+	}
+}
+
+func (M * MongoDB) AddToPreviousTransactions(matrixName string, username string , block model.Block){
+	_, err := M.Client.Database(matrixName).Collection(username).InsertOne(context.Background(), block)
+	if err != nil {
+		log.Fatal(err)
+	}
+}
+
+func RandomVariableCreator() int{
+	min := 1
+	max := 1000000000
+	return rand.Intn(max-min+1) + min
+}

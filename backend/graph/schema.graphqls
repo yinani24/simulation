@@ -1,7 +1,5 @@
 # GraphQL schema example
-#
 # https://gqlgen.com/getting-started/
-scalar DatabaseLink
 
 type User{
   _id: ID!
@@ -10,14 +8,11 @@ type User{
   email: String!
   password: String!
   current_balance: Float!
-  usermongodatabase: DatabaseLink!
 }
 
 type Matrix{
   _id: ID!
   name: String!
-  mongodatabase: DatabaseLink!
-  userdatabase: DatabaseLink!
 }
 
 type Admin{
@@ -27,41 +22,98 @@ type Admin{
   email: String!
   password: String!
   privilidge: Boolean!
+  circulation: Float!
+  totalCurrency: Float!
+  setRate: Float!
+}
+
+type Data{
+  from: String!
+  to: String!
+  amount: Float!
 }
 
 type Block{
+  _id: ID!
   _num: Int!
   matrixID: ID!
   userID: ID!
   nounce: Int!
-  data: String!
+  data: Data!
   prev: String!
   current: String!
+  verify: Boolean!
+}
+
+type CurrentTransaction{
+  block: Block!
+  percent: Float!
+  status: Boolean!
+}
+
+type VerifyAdminResult{
+  verify: Boolean!
+  admin: Admin!
+}
+
+type VerifyUserResult{
+  verify: Boolean!
+  user: User!
 }
 
 type Query {
-  users: [User!]!
-  user(id: ID!, matrixID: ID!): User!
-  admin(id: ID!, matrixID: ID!): Admin!
-  Matrix(id: ID!): Matrix!
+  users(matrixID: ID!): [User!]!
+  user(_id: ID!, matrixID: ID!): User! 
+
+  admin(_id: ID!, matrixID: ID!): Admin!
+  getRate(matrixID: ID!): Float!
+
+  Matrix(_id: ID!): Matrix!
   Matrices: [Matrix!]!
-  Blocks: [Block!]!
-  Block(num: Int!, matrixID: ID!, userID: ID!): Block!
+  
+  #To print personal transactions
+  Blocks(matrixID: ID!, userID: ID!, collection: String): [Block]!
+  Block(_num: Int!, matrixID: ID!, userID: ID!, collection: String): Block!
+
+  BlocksToPrint(matrixID: ID!, userID: ID!, collection: String!): [CurrentTransaction]!
+  BlockChain(matrixID: ID!): [Block!]!
+
+  verifyAdmin(matrixID: ID!, username: String!, password: String!): VerifyAdminResult!
+  verifyUser(matrixID: ID!, username: String!, password: String!): VerifyUserResult!
 }
 
 type Mutation{
-  createUser(matrixID:ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): User!
-  updateUser(id: ID!, matrixID: ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): User!
+  createUser(matrixID:ID!, username: String!, email: String!, password: String!): User!
+  updateUser(id: ID!, matrixID: ID!, username: String, email: String, password: String, current_balance: Float): User!
   deleteUser(id: ID!, matrixID: ID!): User!
   
-  createAdmin(matrixID:ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): Admin!
-  updateAdmin(id: ID!, matrixID:ID!, username: String!, email: String!, password: String!, privilidge: Boolean!): Admin!
-  
-  createMatrix(name: String!): Matrix!
-  updateMatrix(id: ID!, name: String!): Matrix! 
+  createAdmin(matrixID:ID!, username: String!, email: String!, password: String!): Admin!
+  updateAdmin(id: ID!, matrixID:ID!, username: String, email: String, password: String): Admin!
+  updateCirculation(matrixID:ID!, circulation: Float!): Float!
+  updateTotalCurrency(matrixID:ID!, totalCurrency: Float! ): Float!
+  updateRate(matrixID:ID!, setRate: Float!): Float!
+
+  createMatrix(name: String!): Matrix! 
   deleteMatrix(id: ID!): Matrix!
   
-  createBlock(userID: ID!, matrixID:ID!, num: Int!, nounce: Int!, data: String!, prev: String!, current: String!): Block!
-  updateBlock(userID: ID!, matrixID:ID!, num: Int!, nounce: Int!, data: String!, prev: String!, current: String!): Block!
-  deleteBlock(userID: ID!, matrixID:ID!, num: Int!): Block!
+  #To create Blocks for transactions
+  createBlock(userID: ID!, matrixID:ID!, data: DataType!): Block!
+  mineBlock(userID: ID!, matrixID: ID!, block: BlockType!, blockID: ID!): Boolean!
 }
+
+input DataType{
+  from: String!
+  to: String!
+  amount: Float!
+}
+
+input BlockType{
+  _num: Int!
+  nounce: Int!
+  data: DataType!
+  prev: String!
+  current: String!
+  verify: Boolean!
+}
+
+scalar DatabaseLink
