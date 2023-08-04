@@ -245,7 +245,6 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 		or else it just updates the current block collection with the new percent value.
 	*/
 	if dataBlock.Percent > 0.5{
-		log.Print("DataBlock", *dataBlock.Block)
 		var insertBlock model.Block = *dataBlock.Block
 		insertBlock.Verify = true
 		blockchain := M.Client.Database(matrixName).Collection("BlockChain")

@@ -28,9 +28,9 @@ function BlockChain(){
     return(
         <div>
             <h1>Block Chain</h1>
-            <div className="my-block">
+            <div>
                 {data?.BlockChain.map((block: { _num: number, prev: string, current: string, data: Data }) => (
-                    <div key={block._num}>
+                    <div className="my-block" key={block._num}>
                         <p>Num: {block._num}</p>
                         <p>From: {block.data.from}</p>
                         <p>To: {block.data.to}</p>

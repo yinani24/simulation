@@ -441,7 +441,13 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 		Post_Sql.DB.Where("username = ? AND matrix_id = ?", block.Data.To, matrixID).Find(&to_user)
 		Post_Sql.DB.Where("username = ? AND matrix_id = ?", block.Data.From, matrixID).Find(&from_user)
 		new_value := Mongo_db.UpdateBlock(matrix.Name, "CurrentBlock", count, from_user.ID, from_user.MatrixID, block.Current)
-		if new_value {
+		if new_value { 
+			//
+			//
+			//
+			//    NEED TO URGENTLY LOOK INTO THIS MATTER ABOUT DELETING THE BLOCK FROM EVERY BLOCKMINE ONCE IT HAS BEEN ADDED TO THE BLOCKCHAIN
+			//
+
 			from_user.CurrentBalance -= block.Data.Amount
 			to_user.CurrentBalance += block.Data.Amount
 			Post_Sql.DB.Save(&from_user)
@@ -665,75 +671,6 @@ type queryResolver struct{ *Resolver }
 //   - When renaming or deleting a resolver the old code will be put in here. You can safely delete
 //     it when you're done.
 //   - You have helper methods in this file. Move them out to keep these resolver files clean.
-func (r *mutationResolver) UpdateMatrix(ctx context.Context, id string, name *string) (*model.Matrix, error) {
-	var Matrix model.Matrix
-	if err := Post_Sql.DB.First(&Matrix, "id = ?", id).Error; err != nil {
-		return nil, err
-	}
-
-	new_matrix := Matrix.Name
-	if name != nil {
-		new_matrix = *name
-	}
-
-	model_matrix := model.Matrix{
-		ID:   id,
-		Name: new_matrix,
-	}
-
-	Post_Sql.DB.Model(&Matrix).Updates(&model_matrix)
-	return &model_matrix, nil
-}
-func (r *mutationResolver) UpdateBlock(ctx context.Context, userID string, matrixID string, num *int, nounce *int, data *model.DataType, prev *string, current *string) (*model.Block, error) {
-	var user model.User
-	var matrix model.Matrix
-	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
-	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
-
-	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-	defer cancel()
-
-	filter := bson.M{"_num": num}
-	update := bson.M{"$set": bson.M{"data": data}}
-
-	result, error_up := client.UpdateOne(ctx, filter, update)
-
-	if error_up != nil {
-		log.Fatal(error_up)
-	}
-
-	if result.ModifiedCount == 0 {
-		return nil, fmt.Errorf("no matching block found for update")
-	}
-
-	var block model.Block
-	if err := client.FindOne(ctx, filter).Decode(&block); err != nil {
-		return nil, err
-	}
-
-	return &block, nil
-}
-func (r *mutationResolver) DeleteBlock(ctx context.Context, userID string, matrixID string, num int) (*model.Block, error) {
-	var user model.User
-	var matrix model.Matrix
-
-	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
-	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
-
-	client := Mongo_db.Client.Database(matrix.Name).Collection(user.Username)
-	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
-
-	defer cancel()
-
-	filter := bson.M{"_num": num}
-	_, err := client.DeleteOne(ctx, filter)
-	if err != nil {
-		log.Fatal(err)
-	}
-	return &model.Block{}, nil
-}
-
 var mutex = &sync.Mutex{}
 var Mongo_db = database.ConnecttoMongoDB()
 var Post_Sql = database.ConnecttoPostSql("Simulation", &model.Matrix{}, &model.Admin{}, &model.User{})
