@@ -30,6 +30,7 @@ function BlockMine(){
             }
             prev
             current
+            nounce
             verify
         }
     }`;
@@ -47,10 +48,11 @@ function BlockMine(){
 
     const handleMine = async (block: BlockType, id: string) => {
         try{
+            const newBlockwithoutid = {_num: block._num, prev: block.prev, current: block.current, data: block.data, nounce: block.nounce, verify: block.verify}
             const response = await mineBlock({variables: {
                 userID: localStorage.getItem("userId"),
                 matrixID: localStorage.getItem("matrix_id"),
-                block: block,
+                block: newBlockwithoutid,
                 blockID: id
             }})
             console.log(response)
@@ -67,6 +69,7 @@ function BlockMine(){
             <div>
                 {data?.Blocks.map((block: BlockType) => (
                     <div key={block._id} className="my-block">
+                        <p>ID: {block._id}</p>
                         <p>Num: {block._num}</p>
                         <p>From: {block.data.from}</p>
                         <p>To: {block.data.to}</p>
