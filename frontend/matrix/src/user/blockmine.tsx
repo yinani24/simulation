@@ -8,6 +8,7 @@ interface Data {
 }
 
 interface BlockType {
+    _id: string;
     _num: number;
     prev: string;
     current: string;
@@ -34,7 +35,7 @@ function BlockMine(){
     }`;
 
     const MINE_BLOCK = gql`
-    mutation MineBlock($userID: ID!, $matrixID: ID!, $block : BlockType!, blockID: string){
+    mutation MineBlock($userID: ID!, $matrixID: ID!, $block : BlockType!, $blockID: string){
         mineBlock(userID: $userID, matrixID: $matrixID, block: $block, blockID: $blockID)
     }`;
 
@@ -64,7 +65,7 @@ function BlockMine(){
         <div>
             <h1>Block Mine</h1>
             <div>
-                {data?.Blocks.map((block: {_id: string, _num: number, prev: string, current: string, data: Data, }) => (
+                {data?.Blocks.map((block: BlockType) => (
                     <div key={block._id} className="my-block">
                         <p>Num: {block._num}</p>
                         <p>From: {block.data.from}</p>
