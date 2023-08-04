@@ -151,18 +151,18 @@ func ConnecttoMongoDB() (MongoDB) {
 
 func IsBlockValid(oldBlock, newBlock model.Block) bool {
 	if (oldBlock.Num + 1) != newBlock.Num {
-		log.Print("Block Number is not valid 1")
+		//log.Print("Block Number is not valid 1")
 		return false
 	}
 
 	if oldBlock.Current != newBlock.Prev {
-		log.Print("Block Number is not valid 2")
+		//log.Print("Block Number is not valid 2")
 		return false
 	}
 
 	if HashCalculator(newBlock) != newBlock.Current {
-		log.Print("New Block Current: ", newBlock.Current)
-		log.Print("Block Number is not valid 3")
+		//log.Print("New Block Current: ", newBlock.Current)
+		//log.Print("Block Number is not valid 3")
 		return false
 	}
 
@@ -175,7 +175,7 @@ func HashCalculator(block model.Block) string {
 	h := sha256.New()
 	h.Write([]byte(record))
 	hashed := h.Sum(nil)
-	log.Print("Hashed Value from new_block: ", hex.EncodeToString(hashed))
+	//log.Print("Hashed Value from new_block: ", hex.EncodeToString(hashed))
 	return hex.EncodeToString(hashed)
 }
 
@@ -206,6 +206,7 @@ func HashCalculator(block model.Block) string {
 // 	fmt.Println("Public Key:", publicKeyHex)
 // }
 
+
 func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64, userID string, matrixID string, Current string) (bool){
 	/*
 		Open the CurrentBlock Collection and find the block we recieved from the user.
@@ -214,17 +215,21 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
 	defer cancel()
 	
-	filter := bson.D{{Key: "block.current", Value: Current},
+	filter := bson.D{
+		{Key: "block.current", Value: Current},
 		{Key: "block.matrixID", Value: matrixID},
-		{Key: "block.userID", Value: userID}}
+		{Key: "block.userID", Value: userID},
+	}
 	
 	var dataBlock model.CurrentTransaction
 	err := client.FindOne(ctx, filter).Decode(&dataBlock)
 	if err != nil {
 		if err == mongo.ErrNoDocuments {
 			fmt.Println("Document not found")
+			return false
 		} else {
 			log.Fatal(err)
+			return false
 		}
 	}
 
@@ -240,9 +245,10 @@ func (M * MongoDB) UpdateBlock(matrixName string, collection string, count int64
 		or else it just updates the current block collection with the new percent value.
 	*/
 	if dataBlock.Percent > 0.5{
+		log.Print("DataBlock", *dataBlock.Block)
 		var insertBlock model.Block = *dataBlock.Block
 		insertBlock.Verify = true
-		blockchain := M.Client.Database(matrixName).Collection("Blockchain")
+		blockchain := M.Client.Database(matrixName).Collection("BlockChain")
 		_, err := blockchain.InsertOne(ctx, insertBlock)
 		if err != nil {
 			log.Fatal(err)
@@ -311,7 +317,7 @@ func (M * MongoDB) UpdateMineBlock(matrixName string, collection string, num int
 		if err = cursor.Decode(&result); err != nil {
 			log.Fatal(err)
 		}
-		fmt.Println(block)
+		//fmt.Println(block)
 		id := result["_id"].(primitive.ObjectID)
 		block.Num = num
 		block.Prev = prev
@@ -363,7 +369,7 @@ func (M * MongoDB) UpdateCurrentBlock(matrixName string, collection string, num 
 	}
 }
 
-func (M * MongoDB) AddToPreviosTransactions(matrixName string, username string , block model.Block){
+func (M * MongoDB) AddToPreviousTransactions(matrixName string, username string , block model.Block){
 	_, err := M.Client.Database(matrixName).Collection(username).InsertOne(context.Background(), block)
 	if err != nil {
 		log.Fatal(err)

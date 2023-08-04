@@ -298,7 +298,8 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	*/
 	var user model.User
 	var matrix model.Matrix
-
+	var users []model.User
+	Post_Sql.DB.Where("matrix_id = ?", matrixID).Find(&users)
 	Post_Sql.DB.Where("id = ? AND matrix_id = ?", userID, matrixID).Find(&user)
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
@@ -351,14 +352,25 @@ func (r *mutationResolver) CreateBlock(ctx context.Context, userID string, matri
 	}
 
 	/*
+		Insert it into every other user except the current user
+	*/
+	for _, user := range users {
+		if user.ID != userID {
+			otherUser := Mongo_db.Client.Database(matrix.Name).Collection(user.Username + "MineBlocks")
+			_, err := otherUser.InsertOne(ctx, returnBlock)
+			if err != nil {
+				log.Fatal(err)
+			}
+		}
+	}
+
+	/*
 		All the transactions that needs to be updated on blocks left to mine by the peers
 		Need to complete the how of mining the block maybe will need to form a new
 		type that allows for mining and then the value is compared
 		when more than 50% is reached then the mining is done and the block is added to the blockchain
 	*/
 	new_collection := user.Username + "MineBlocks"
-	log.Print(new_collection)
-
 	userTransaction := Mongo_db.Client.Database(matrix.Name).Collection(new_collection)
 	inserg, err := userTransaction.InsertOne(ctx, returnBlock)
 	if err != nil {
@@ -385,7 +397,7 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 	Post_Sql.DB.Where("id = ?", matrixID).Find(&matrix)
 
 	/*
-		Get the current block from the current block collection
+		Get the newest block from BlockChain collection
 	*/
 	var oldBlock model.Block = Mongo_db.GetHighestFromBlockChain(matrix.Name, "BlockChain")
 	/*
@@ -424,22 +436,29 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 			Update the from and to user with the balance amount after more than 50% people have verified the block
 		*/
 		var to_user, from_user model.User
+		var users []model.User
+		Post_Sql.DB.Where("matrix_id = ?", matrixID).Find(&users)
 		Post_Sql.DB.Where("username = ? AND matrix_id = ?", block.Data.To, matrixID).Find(&to_user)
 		Post_Sql.DB.Where("username = ? AND matrix_id = ?", block.Data.From, matrixID).Find(&from_user)
-		new_value := Mongo_db.UpdateBlock(matrix.Name, "CurrentBlock", count, newBlock.UserID, newBlock.MatrixID, block.Current)
+		new_value := Mongo_db.UpdateBlock(matrix.Name, "CurrentBlock", count, from_user.ID, from_user.MatrixID, block.Current)
 		if new_value {
 			from_user.CurrentBalance -= block.Data.Amount
 			to_user.CurrentBalance += block.Data.Amount
 			Post_Sql.DB.Save(&from_user)
 			Post_Sql.DB.Save(&to_user)
-			Mongo_db.AddToPreviosTransactions(matrix.Name, block.Data.From, newBlock)
+			newBlock.Verify = true
+			Mongo_db.AddToPreviousTransactions(matrix.Name, block.Data.From, newBlock)
 			/*
 				Also perform the update of in CurrentBlock and MineBlock of each individual user with the new values of prev hash and num
 				after getting the value of the new highest block from the blockchain
 			*/
 			var highestBlock model.Block = Mongo_db.GetHighestFromBlockChain(matrix.Name, "BlockChain")
-			Mongo_db.UpdateCurrentBlock(matrix.Name, "CurrentBlock", highestBlock.Num, highestBlock.Current)
-			Mongo_db.UpdateMineBlock(matrix.Name, new_collection, highestBlock.Num, highestBlock.Current)
+			Mongo_db.UpdateCurrentBlock(matrix.Name, "CurrentBlock", (highestBlock.Num + 1), highestBlock.Current)
+			
+			for _, user := range users {
+				new_collection := user.Username + "MineBlocks"
+				Mongo_db.UpdateMineBlock(matrix.Name, new_collection, highestBlock.Num, highestBlock.Current)
+			}
 		}
 		return true, nil
 	} else {

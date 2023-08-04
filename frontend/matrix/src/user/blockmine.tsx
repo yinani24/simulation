@@ -40,7 +40,7 @@ function BlockMine(){
         mineBlock(userID: $userID, matrixID: $matrixID, block: $block, blockID: $blockID)
     }`;
 
-    const {data, loading, error} = useQuery(GET_BLOCKS,{
+    const {data, loading, error, refetch} = useQuery(GET_BLOCKS,{
         variables:{userID: localStorage.getItem("userId"), matrixID: localStorage.getItem("matrix_id"), collection: "MineBlocks"}
     })
 
@@ -57,6 +57,9 @@ function BlockMine(){
                 blockID: id
             }})
             console.log(response)
+            if (response){
+                const ref = await refetch()
+            }
             return response
         }
         catch(error){
