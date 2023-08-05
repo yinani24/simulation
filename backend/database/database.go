@@ -292,6 +292,31 @@ func (M * MongoDB) GetHighestFromBlockChain(matrixName string, collection string
 	return highestBlock
 }
 
+func (M * MongoDB) FindIDFromMineBlock(matrixName string, collection string, userID string, matrixID string, Current string) (string){
+	coll := M.Client.Database(matrixName).Collection(collection)
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+	
+	filter := bson.D{
+		{Key: "current", Value: Current},
+		{Key: "matrixID", Value: matrixID},
+		{Key: "userID", Value: userID},
+	}
+	
+	var dataBlock bson.M
+	err := coll.FindOne(ctx, filter).Decode(&dataBlock)
+	if err != nil {
+		if err == mongo.ErrNoDocuments {
+			fmt.Println("Document not found")
+			return ""
+		} else {
+			log.Fatal(err)
+			return ""
+		}
+	}
+	return dataBlock["_id"].(primitive.ObjectID).Hex()
+}
+
 func (M * MongoDB) DeleteBlockFromMineBlock(matrixName string, collection string, id string){
 	_id, _ := primitive.ObjectIDFromHex(id)
 	_, err := M.Client.Database(matrixName).Collection(collection).DeleteOne(context.Background(), bson.D{{Key: "_id", Value: _id}})

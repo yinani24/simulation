@@ -442,12 +442,6 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 		Post_Sql.DB.Where("username = ? AND matrix_id = ?", block.Data.From, matrixID).Find(&from_user)
 		new_value := Mongo_db.UpdateBlock(matrix.Name, "CurrentBlock", count, from_user.ID, from_user.MatrixID, block.Current)
 		if new_value { 
-			//
-			//
-			//
-			//    NEED TO URGENTLY LOOK INTO THIS MATTER ABOUT DELETING THE BLOCK FROM EVERY BLOCKMINE ONCE IT HAS BEEN ADDED TO THE BLOCKCHAIN
-			//
-
 			from_user.CurrentBalance -= block.Data.Amount
 			to_user.CurrentBalance += block.Data.Amount
 			Post_Sql.DB.Save(&from_user)
@@ -463,7 +457,9 @@ func (r *mutationResolver) MineBlock(ctx context.Context, userID string, matrixI
 			
 			for _, user := range users {
 				new_collection := user.Username + "MineBlocks"
-				Mongo_db.UpdateMineBlock(matrix.Name, new_collection, highestBlock.Num, highestBlock.Current)
+				var id = Mongo_db.FindIDFromMineBlock(matrix.Name, new_collection, from_user.ID, from_user.MatrixID, block.Current)
+				Mongo_db.DeleteBlockFromMineBlock(matrix.Name, new_collection, id)
+				Mongo_db.UpdateMineBlock(matrix.Name, new_collection, (highestBlock.Num + 1), highestBlock.Current)
 			}
 		}
 		return true, nil
