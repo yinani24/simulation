@@ -2,6 +2,13 @@ import React, { useState, ChangeEvent, FormEvent } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utilis/Auth';
 import { gql, useMutation } from '@apollo/client';
+import {
+    FormControl,
+    FormLabel,
+    FormErrorMessage,
+    FormHelperText,
+    Button, Text
+  } from '@chakra-ui/react'
 
 interface Authen {
   number: number;
@@ -143,7 +150,10 @@ function Registration({ number, new_id }: Authen) {
 
     return (
         <div>
-        <h2>Register</h2>
+        <Button onClick={navigatetologin}>
+            Back
+        </Button>
+        <Text>Register</Text>
         <form onSubmit={HandleLogin}>
             <div>
             <label htmlFor="username">Username:</label>
@@ -189,9 +199,6 @@ function Registration({ number, new_id }: Authen) {
                 onDismiss={() => userReset()}
             />)
         }
-        <button onClick={navigatetologin}>
-            Back
-        </button>
         </div>
     );
 }

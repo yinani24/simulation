@@ -4,6 +4,7 @@ import Simulation from './components/simulation';
 import {BrowserRouter as Router, Routes, Route} from "react-router-dom";
 import Matrix from './components/matrixlayout';
 import {useQuery, useMutation, gql} from '@apollo/client';
+import { Button } from '@chakra-ui/react';
 
 function App() {
 
@@ -49,7 +50,7 @@ function App() {
   //console.log(data)
 
   if (loading) {
-    return <p>Loading...</p>;
+    return <div className='flex w-full h-full flex-col justify-center items-center'> <Button size='lg' isLoading colorScheme='blue' variant='transparent'> Loading </Button> </div>;
   }
 
   if (error && data?.Matrices) {
@@ -85,7 +86,7 @@ function App() {
     }
   }
 
-  return (
+  return(
     <Router>
       <Routes>
         <Route path='/' element={<Simulation 

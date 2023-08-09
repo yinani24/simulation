@@ -2,6 +2,7 @@ import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utilis/Auth';
 import { gql, useQuery } from '@apollo/client';
+import { Button, Text } from '@chakra-ui/react';
 
 interface Authen {
   number: number;
@@ -129,9 +130,9 @@ function Login({ number, new_id }: Authen) {
   }
 
   return (
-    <div>
-      <h2>Login</h2>
-      <form onSubmit={HandleLogin} ref={formRef}>
+    <div className='flex flex-col'>
+      <Text className='m-2' as='i' fontFamily='cursive' fontSize='2xl'>Login</Text>
+      <form className='m-2' onSubmit={HandleLogin} ref={formRef}>
         <div>
           <label htmlFor="username">Username:</label>
           <input type="text" id="username" value={username} onChange={handleUsernameChange}
@@ -146,7 +147,7 @@ function Login({ number, new_id }: Authen) {
             onChange={handlePasswordChange}
           />
         </div>
-        <button type="submit">Login</button>
+        <Button type="submit">Login</Button>
       </form>
       <br/>
       {
@@ -157,10 +158,9 @@ function Login({ number, new_id }: Authen) {
           (userError && username && password && 
           <LoginFailedMessageWindow message={userError.message} onDismiss={() => formRef.current?.reset()}/>)
       }
-      <br/>
-      <button onClick={navigatetologin}>
+      <Button className='m-2 ' onClick={navigatetologin}>
         Back
-      </button>
+      </Button>
       </div>
   );
 }
