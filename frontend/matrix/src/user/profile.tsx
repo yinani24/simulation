@@ -1,5 +1,6 @@
 import { ChangeEvent, FormEvent, useState } from "react"
 import {gql, useMutation, useQuery} from '@apollo/client'
+import { Button, FormLabel, Input, Text } from "@chakra-ui/react";
 
 function Profile(){
     const paid = 0
@@ -59,28 +60,24 @@ function Profile(){
     }
 
     return(
-        <div>
+        <div className="m-2 flex flex-col">
             {/* <label>Previous Transacations: </label>
             <div>
                 <p>Paid ${paid}</p>
             </div> */}
-            <h3>Current Profile</h3>
-            <p>Name: {currUserData?.user.username}</p>
-            <p>Email: {currUserData?.user.email}</p>
-            <p>Current Balance: {currUserData?.user.current_balance}</p>
-            <p></p>
-            <h3>Change the Fields you want to update</h3>
-            <form onSubmit={handleSubmit}>
-                <label htmlFor='Name'>Name: </label>
-                <input type="text" name="name" value={update.name} onChange={handleUpdate}/>
-                <br/>
-                <label htmlFor='email'>Email: </label>
-                <input type="email" name="email" value={update.email} onChange={handleUpdate}/>
-                <br/>
-                <label htmlFor='password'>Password: </label>
-                <input type="password" name="password" value={update.password} onChange={handleUpdate}/>
-                <br/>   
-                <button onClick={() => {setSuccess(true)}}>Update</button>
+            <Text fontSize='40px' as='b' color='blue.800'>Current Profile</Text>
+            <Text as='i' fontSize='20px' color='purple.600'>Name: {currUserData?.user.username}</Text>
+            <Text as='i' fontSize='20px' color='purple.600'>Email: {currUserData?.user.email}</Text>
+            <Text as='i' fontSize='20px' color='purple.600'>Current Balance: {currUserData?.user.current_balance}</Text>
+            <Text as='i' fontSize='20px' color='purple.600'>Change the Fields you want to update</Text>
+            <form className='w-1/4' onSubmit={handleSubmit}>
+                <FormLabel htmlFor='Name'>Name: </FormLabel>
+                <Input type="text" name="name" value={update.name} onChange={handleUpdate}/>
+                <FormLabel htmlFor='email'>Email: </FormLabel>
+                <Input type="email" name="email" value={update.email} onChange={handleUpdate}/>
+                <FormLabel htmlFor='password'>Password: </FormLabel>
+                <Input type="password" name="password" value={update.password} onChange={handleUpdate}/>  
+                <Button className="my-2" onClick={() => {setSuccess(true)}}>Update</Button>
             </form>
             {suceess? <p>Update Successful</p> : null}
         </div>

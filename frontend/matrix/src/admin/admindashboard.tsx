@@ -2,6 +2,7 @@ import { useParams, Link, Routes, Route, useLocation } from 'react-router-dom';
 import React, { useState } from 'react';
 import { useAuth } from '../utilis/Auth';
 import { gql, useMutation, useQuery } from '@apollo/client';
+import { Button, FormLabel, Input, Text } from '@chakra-ui/react';
 
 
 function AdminDashBoard() {
@@ -20,22 +21,21 @@ function NavBar() {
     let new_id = location.state?.new_id || NaN;
     const auth = useAuth();
     const [logout, setLogout] = useState(false);
-    // console.log("Admin Dashboard", new_id)
-    // console.log("Auth in AdminDashboard", auth.auth)
+    console.log(logout)
     const handleLogout = () => {
         if(logout){
+            console.log(auth.auth)
             auth.logout();
         }
     }
 
     return (
-        <div>
-            <form onSubmit={handleLogout}>
-                <button> <Link to='' state={{ new_id: new_id }}>Home</Link> </button>
-                <button onClick={() => setLogout(true)}> Logout </button>
-            </form>
-            
-        </div>
+        <form className='w-1/2' onSubmit={handleLogout}>
+            <div className='w-1/3 flex flex-row justify-around'>
+                <Button className='ml-3 mt-2'> <Link to='' state={{ new_id: new_id }}>Home</Link> </Button>
+                <Button className='ml-3 mt-2' type="submit" onClick={() => setLogout(true)}> Logout </Button>
+            </div>
+        </form>
     )
 }
 
@@ -63,6 +63,7 @@ function Home() {
     const Admin = gql`
     query Admin($id: ID!, $matrixID: ID!){
         admin(_id: $id, matrixID: $matrixID){
+            username
             circulation
             setRate
             totalCurrency
@@ -79,8 +80,6 @@ function Home() {
 
     const handleSubmit = async (event: React.FormEvent<HTMLFormElement>) => {
         event.preventDefault();
-        console.log("Submitted")
-        console.log(money)
         try{
             const circulationupdate = await updateCirculation({variables: {
                 matrixID: localStorage.getItem("matrix_id") || ``,
@@ -106,19 +105,17 @@ function Home() {
     };
     
     return (
-        <div>
-            <h1>Dashboard</h1>
-            <h1>Welcome Admin</h1>
-            <p>Circulation Value: {data?.admin.circulation}</p>
-            <p>Rate Value: {data?.admin.setRate}</p>
-            <form onSubmit={handleSubmit}>
-                <label htmlFor='circulation'>Circulation</label>
-                <input type='number' id='circulation' name='circulation' value={money.circulation} onChange={handleInputChange} />
-                <br/>
-                <label htmlFor='circulation'>Rate for Exchange: 1 dollar = </label>
-                <input type='number' id='rate' name='rate' value={money.rate} onChange={handleInputChange} />
-                <br/>
-                <button>Submit</button>
+        <div className='flex flex-col ml-4 mt-2 w-1/2'>
+            <Text className='uppercase font-sans italic' fontSize='40px' as='b' color='blue.800'>Admin Dashboard</Text>
+            <Text className='mt-1' as='u' fontWeight='bold' fontSize='30px' color='green.600'>Welcome {data?.admin.username}</Text>
+            <Text className='mt-1' as='i' fontSize='20px' color='purple.400'> Circulation Value: {data?.admin.circulation}</Text>
+            <Text className='mt-1' as='i' fontSize='20px' color='purple.400'> Rate Value: {data?.admin.setRate}</Text>
+            <form className='w-1/2' onSubmit={handleSubmit}>
+                <FormLabel htmlFor='circulation' color='red'>Circulation</FormLabel>
+                <Input className='w-1/4' type='number' id='circulation' name='circulation' value={money.circulation} onChange={handleInputChange} />
+                <FormLabel htmlFor='circulation' color='red'>Rate for Exchange: 1 dollar = </FormLabel>
+                <Input type='number' id='rate' name='rate' value={money.rate} onChange={handleInputChange} />
+                <Button type="submit" className='mt-4'>Submit</Button>
             </form>
         </div>
 

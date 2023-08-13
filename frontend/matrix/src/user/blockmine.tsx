@@ -1,5 +1,6 @@
 import { gql, useMutation, useQuery } from "@apollo/client";
 import './blockchain.css'
+import { Button, Text } from "@chakra-ui/react";
 
 interface Data {
     from: string;
@@ -68,20 +69,16 @@ function BlockMine(){
     }
 
     return(
-        <div>
-            <h1>Block Mine</h1>
+        <div className="m-4 bg-gradient-to-r from-yellow to-gray-light">
+            <Text fontSize='40px' as='i' fontWeight='bold' color='blue.800'>Block Mine</Text>
             <div>
                 {data?.Blocks.map((block: BlockType) => (
                     <div key={block._id} className="my-block">
-                        <p>ID: {block._id}</p>
                         <p>Num: {block._num}</p>
                         <p>From: {block.data.from}</p>
                         <p>To: {block.data.to}</p>
                         <p>Amount: {block.data.amount}</p>
-                        <p>Prev: {block.prev}</p>
-                        <p>Current: {block.current}</p>
-                        <p>Nounce: {block.nounce}</p>
-                        <button onClick={() => handleMine(block, block._id)}> Mine </button>
+                        <Button onClick={() => handleMine(block, block._id)}> Mine </Button>
                     </div>
                 ))}
             </div>      

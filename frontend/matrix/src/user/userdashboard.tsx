@@ -5,6 +5,7 @@ import Profile from './profile';
 import BlockChain from './blockchain';
 import BlockMine from './blockmine';
 import { useQuery, gql, useMutation } from '@apollo/client';
+import { Button, FormLabel, Input, Select, Text } from '@chakra-ui/react';
 
 interface UserType {
     _id: string;
@@ -18,7 +19,6 @@ interface Data{
 }
 
 function UserDashBoard(){
-    // let {user} = useParams()
     return(
         <>
         <NavBar/>
@@ -37,7 +37,7 @@ function NavBar(){
     let new_id = location.state?.new_id || NaN;
     const auth = useAuth();
     const [logout, setLogout] = useState(false);
-    console.log("User Dashboard", new_id)
+    //console.log("User Dashboard", new_id)
     console.log("Auth in UserDashboard", auth.auth)
     const handleLogout = () => {
         if(logout){
@@ -46,14 +46,15 @@ function NavBar(){
     }
     return(
         <div>
-        <form onSubmit={handleLogout}>  
-            <button> <Link to='' state={{new_id: new_id}}>Home</Link> </button>
-            <button> <Link to='blockmine' state={{new_id: new_id}}>Block Mine</Link> </button> 
-            <button> <Link to='blockchain' state={{new_id: new_id}}>Block Chain</Link> </button>
-            <button> <Link to='Profile' state={{new_id: new_id}}>Profile</Link> </button>
-            <button onClick={() => setLogout(true)}> Logout </button>
-        </form>
-            
+            <form onSubmit={handleLogout}> 
+                <div className='w-1/2 flex flex-row justify-around'> 
+                    <Button className='m-2'> <Link to='' state={{new_id: new_id}}>Home</Link> </Button>
+                    <Button className='m-2'> <Link to='blockmine' state={{new_id: new_id}}>Block Mine</Link> </Button> 
+                    <Button className='m-2'> <Link to='blockchain' state={{new_id: new_id}}>Block Chain</Link> </Button>
+                    <Button className='m-2'> <Link to='Profile' state={{new_id: new_id}}>Profile</Link> </Button>
+                    <Button className='m-2' type="submit" onClick={() => setLogout(true)}> Logout </Button>
+                </div>
+            </form>
         </div>
     )
 }
@@ -124,24 +125,25 @@ function Transfer(username: {username: string | undefined}){
 
     console.log("Send User", sendUser)
     return(
-        <form onSubmit={handleSubmit}>
-                <label>Send Money To: </label>
-                <select onChange={handleOptionChange}>
-                    <option value="">Select an option</option>
+        <form className='w-1/2 ' onSubmit={handleSubmit}>
+                <FormLabel className='m-2'>Send Money To: </FormLabel>
+                <Select className='m-2 w-1/2' variant='filled' onChange={handleOptionChange}>
+                    <option className='w-1/2' value="">Select an option</option>
                     {   
                         allUserData?.users.map((user: UserType) => (
                             user._id !== localStorage.getItem("userId") ? 
-                            <option key={user._id} value={user._id}>{user.username}</option>
+                            <option className='w-1/2' key={user._id} value={user._id}>{user.username}</option>
                             :
                             null
                         ))
                     }
-                </select>
-                <p>Selected option: {sendUser?.username}</p>
-                <label htmlFor='amount'>Amount To Transfer: </label>
-                <input type="number" name="amount" value={sendUser.amount} onChange={handlesendUser}/>
-                <br/>
-                <button type='submit'>Send</button>
+                </Select>
+                <Text className='m-2' as='i' fontWeight='bold' color='blue.500'>Selected option: {sendUser?.username}</Text>
+                <div className='m-2 w-1/2'>
+                    <FormLabel htmlFor='amount'>Amount To Transfer: </FormLabel>
+                    <Input className='my-2' type="number" name="amount" value={sendUser.amount} onChange={handlesendUser}/>
+                </div>
+                <Button className='w-1/4 my-4 ml-2' type='submit'>Send</Button>
             </form>
     )
 
@@ -203,30 +205,30 @@ function Buy(refetch: {refetch: any}){
     }
 
     return(
-        <div>
-        <p>Credit Card Details</p>
-        <form onSubmit={handleSubmit}>
-            <div>
-                <label htmlFor='amount'>Amount To Buy: </label>
-                <input type="number" name="amount" value={Carddetails.amount} onChange={handleCardChange}/>
+        <div >
+        <Text className='m-2' as='i' color='blue.500' fontWeight='bold'>Credit Card Details</Text>
+        <form className='w-1/4' onSubmit={handleSubmit}>
+            <div className='m-2'>
+                <FormLabel htmlFor='amount'>Amount To Buy: </FormLabel>
+                <Input type="number" name="amount" value={Carddetails.amount} onChange={handleCardChange}/>
             </div>
-            <div>
-                <label htmlFor='name'>Name on Card: </label>
-                <input type="text" name="name" value={Carddetails.name} onChange={handleCardChange}/>        
+            <div className='m-2'>
+                <FormLabel htmlFor='name'>Name on Card: </FormLabel>
+                <Input type="text" name="name" value={Carddetails.name} onChange={handleCardChange}/>        
             </div>
-            <div>
-                <label htmlFor='cardNumber'>Card Number: </label>
-                <input type="text" name="cardNumber" value={Carddetails.cardNumber} onChange={handleCardChange}/>        
+            <div className='m-2'>
+                <FormLabel htmlFor='cardNumber'>Card Number: </FormLabel>
+                <Input type="text" name="cardNumber" value={Carddetails.cardNumber} onChange={handleCardChange}/>        
             </div>
-            <div>
-                <label htmlFor='expiry'>Expiry: </label>
-                <input type="text" name="expiry" value={Carddetails.expiry} onChange={handleCardChange}/>        
+            <div className='m-2'>
+                <FormLabel htmlFor='expiry'>Expiry: </FormLabel>
+                <Input type="text" name="expiry" value={Carddetails.expiry} onChange={handleCardChange}/>        
             </div>
-            <div>
-                <label htmlFor='cvv'>CVV: </label>
-                <input type="text" name="cvv" value={Carddetails.cvv} onChange={handleCardChange}/>        
+            <div className='m-2'>
+                <FormLabel htmlFor='cvv'>CVV: </FormLabel>
+                <Input type="text" name="cvv" value={Carddetails.cvv} onChange={handleCardChange}/>        
             </div>
-            <button type='submit'>Buy</button>
+            <Button className='m-2' type='submit'>Buy</Button>
         </form>
         </div>
     )
@@ -261,15 +263,14 @@ function Home(){
     });
  
     return(
-        <div>
-            <h1>Dashboard</h1>
-            <h2>Welcome {currUserData?.user.username}</h2>
-            <p>Current Balance: {currUserData?.user.current_balance} </p>
-            <p>Current Trading Value: 1 dollar = {currRateData?.getRate} Coins</p>
-            <h2> Trading with other users in the matrix </h2>
+        <div className='flex flex-col bg-gradient-to-r from-yellow to-gray-light'>
+            <Text className='m-2 uppercase font-sans italic' fontSize='40px' as='b' color='blue.800'>User Dashboard</Text>
+            <Text className='m-2' as='u' fontWeight='bold' fontSize='30px' color='green.600'>Welcome {currUserData?.user.username}</Text>
+            <Text className='m-2' as='i' fontSize='20px' color='purple.400'>Current Balance: {currUserData?.user.current_balance} </Text>
+            <Text className='m-2' as='i' fontSize='20px' color='purple.400'>Current Trading Value: 1 dollar = {currRateData?.getRate} Coins</Text>
+            <Text className='m-2' fontWeight='bold' color='teal.400'> Trading with other users in the matrix </Text>
             <Transfer username={currUserData?.user.username}/>
-            <br/>
-            <button onClick={() => {if (!buy){setBuy(true)} else {setBuy(false)}}}>Do you want to buy some coins?</button>
+            <Button colorScheme='teal' className='m-2 w-1/4' onClick={() => {if (!buy){setBuy(true)} else {setBuy(false)}}}>Do you want to buy some coins?</Button>
             {buy? <Buy refetch={currUserRefetch}/> : null}
         </div>
         

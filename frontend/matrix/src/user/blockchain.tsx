@@ -1,5 +1,6 @@
 import {from, gql, useMutation, useQuery} from "@apollo/client";
 import './blockchain.css'
+import { Text } from "@chakra-ui/react";
 
 interface Data{
     from: string;
@@ -26,17 +27,15 @@ function BlockChain(){
     console.log("BlockChain", data)
 
     return(
-        <div>
-            <h1>Block Chain</h1>
+        <div className='m-2 bg-gradient-to-r from-yellow to-gray-light'>
+            <Text fontSize='40px' as='b' color='blue.800'>Block Chain</Text>
             <div>
                 {data?.BlockChain.map((block: { _num: number, prev: string, current: string, data: Data }) => (
-                    <div className="my-block" key={block._num}>
-                        <p>Num: {block._num}</p>
-                        <p>From: {block.data.from}</p>
-                        <p>To: {block.data.to}</p>
-                        <p>Amount: {block.data.amount}</p>
-                        <p>Prev: {block.prev}</p>
-                        <p>Current: {block.current}</p>
+                    <div className="my-block w-1/2" key={block._num}>
+                        <Text>Num: {block._num}</Text>
+                        <Text>From: {block.data.from}</Text>
+                        <Text>To: {block.data.to}</Text>
+                        <Text>Amount: {block.data.amount}</Text>
                     </div>
                 ))}
             </div>

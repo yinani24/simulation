@@ -17,11 +17,11 @@ const root = ReactDOM.createRoot(
 
 root.render(
   <ChakraProvider>
+    <div className='h-screen top-0 left-0  w-screen bg-gradient-to-r from-yellow to-gray-light bg-scroll bg-cover bg-no-repeat'>
     <ApolloProvider client={client}>
-      <div className='h-screen w-screen bg-gradient-to-r from-yellow to-gray-light'>
       <App/>
-      </div>
     </ApolloProvider>
+    </div>
   </ChakraProvider>
 );
 
