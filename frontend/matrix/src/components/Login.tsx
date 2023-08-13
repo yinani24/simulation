@@ -3,6 +3,13 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utilis/Auth';
 import { gql, useQuery } from '@apollo/client';
 import { Button, Text } from '@chakra-ui/react';
+import {
+  FormControl,
+  FormLabel,
+  Input,
+  FormErrorMessage,
+  FormHelperText,
+} from '@chakra-ui/react'
 
 interface Authen {
   number: number;
@@ -100,6 +107,9 @@ function Login({ number, new_id }: Authen) {
           setUserIdInLocalStorage(null);
           auth.login(username);
           console.log("Auth in Login", auth.auth)
+          if (formRef.current) {
+            formRef.current.reset();
+          }
           navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
         }
       }
@@ -116,6 +126,9 @@ function Login({ number, new_id }: Authen) {
           setAdminIdInLocalStorage(null);
           auth.login(username);
           console.log("Auth in Login", auth.auth)
+          if (formRef.current) {
+            formRef.current.reset();
+          }
           navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
         }
       }
@@ -133,21 +146,23 @@ function Login({ number, new_id }: Authen) {
     <div className='flex flex-col'>
       <Text className='m-2' as='i' fontFamily='cursive' fontSize='2xl'>Login</Text>
       <form className='m-2' onSubmit={HandleLogin} ref={formRef}>
-        <div>
-          <label htmlFor="username">Username:</label>
-          <input type="text" id="username" value={username} onChange={handleUsernameChange}
+        <FormControl isRequired>
+          <FormLabel htmlFor="username">Username:</FormLabel>
+          <Input type="text" id="username" value={username} onChange={handleUsernameChange}
           />
-        </div>
-        <div>
-          <label htmlFor="password">Password:</label>
-          <input
+        </FormControl>
+        <FormControl isRequired>
+          <FormLabel htmlFor="password">Password:</FormLabel>
+          <Input
             type="password"
             id="password"
             value={password}
             onChange={handlePasswordChange}
           />
-        </div>
+        </FormControl>
+        <div className='mt-2'>
         <Button type="submit">Login</Button>
+        </div>
       </form>
       <br/>
       {
@@ -158,9 +173,11 @@ function Login({ number, new_id }: Authen) {
           (userError && username && password && 
           <LoginFailedMessageWindow message={userError.message} onDismiss={() => formRef.current?.reset()}/>)
       }
-      <Button className='m-2 ' onClick={navigatetologin}>
-        Back
-      </Button>
+      <div className='w-1/4'>
+        <Button className='ml-2' onClick={navigatetologin}>
+          Back
+        </Button>
+      </div>
       </div>
   );
 }

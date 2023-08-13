@@ -57,9 +57,9 @@ function Admin({ Authen }: { Authen: Authen }) {
 
 function User({ Authen }: { Authen: Authen }) {
   const [registered, setRegistered] = useState(false);
-  return (<div>
-    <Text>User</Text>
-    {!registered ? <Button onClick={() => setRegistered(true)}>Do you wish to register</Button> : null}
+  return (<div className='flex flex-col w-1/4'>
+    <Text className='m-2' fontFamily='sans-serif' color='orange.500' as='b' fontSize='30px'>User</Text>
+    {!registered ? <Button className='m-2' onClick={() => setRegistered(true)}>Do you wish to register</Button> : null}
     {!registered ? <Login number={Authen.number} new_id={Authen.new_id} /> : <Registration number={Authen.number} new_id={Authen.new_id}/>}
   </div>
   )

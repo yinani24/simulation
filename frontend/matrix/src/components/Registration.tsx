@@ -7,7 +7,7 @@ import {
     FormLabel,
     FormErrorMessage,
     FormHelperText,
-    Button, Text
+    Button, Text, Input
   } from '@chakra-ui/react'
 
 interface Authen {
@@ -56,6 +56,7 @@ function Registration({ number, new_id }: Authen) {
         }
     } 
     `;
+    const formRef = React.useRef<HTMLFormElement>(null);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
@@ -128,6 +129,9 @@ function Registration({ number, new_id }: Authen) {
             if(response){
                 auth.login(username);
                 console.log("Auth in Registration", auth.auth)
+                if (formRef.current) {
+                    formRef.current.reset();
+                }
                 navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
             }
             // console.log(adminError)
@@ -137,6 +141,9 @@ function Registration({ number, new_id }: Authen) {
             if(response){
                 auth.login(username);
                 console.log("Auth in Registration", auth.auth)
+                if (formRef.current) {
+                    formRef.current.reset();
+                }
                 navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
             }
             // console.log(userError)
@@ -149,41 +156,45 @@ function Registration({ number, new_id }: Authen) {
     }
 
     return (
-        <div>
-        <Button onClick={navigatetologin}>
-            Back
-        </Button>
-        <Text>Register</Text>
-        <form onSubmit={HandleLogin}>
-            <div>
-            <label htmlFor="username">Username:</label>
-            <input
-                type="text"
-                id="username"
-                value={username}
-                onChange={handleUsernameChange}
-            />
+        <div className='flex flex-col'>
+        <Text className='m-2' as='i' fontFamily='cursive' fontSize='2xl'>Register</Text>
+        <form  className='m-2' onSubmit={HandleLogin} ref={formRef}>
+            <FormControl isRequired>
+                <FormLabel htmlFor="username">Username:</FormLabel>
+                <Input
+                    type="text"
+                    id="username"
+                    value={username}
+                    onChange={handleUsernameChange}
+                />
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel htmlFor="email">Email:</FormLabel>
+                <Input
+                    type="email"
+                    id="email"
+                    value={email}
+                    onChange={handleEmailChange}
+                />
+            </FormControl>
+            <FormControl isRequired>
+                <FormLabel htmlFor="password">Password:</FormLabel>
+                <Input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={handlePasswordChange}
+                />
+            </FormControl>
+            <div className='mt-2'>
+                <Button type="submit">Register</Button>
             </div>
-            <div>
-            <label htmlFor="email">Email:</label>
-            <input
-                type="email"
-                id="email"
-                value={email}
-                onChange={handleEmailChange}
-            />
-            </div>
-            <div>
-            <label htmlFor="password">Password:</label>
-            <input
-                type="password"
-                id="password"
-                value={password}
-                onChange={handlePasswordChange}
-            />
-            </div>
-            <button type="submit">Register</button>
         </form>
+        <div>
+            <Button className='m-2' onClick={navigatetologin}>
+                Back
+            </Button>
+        </div>
         <br/>
         {
             new_id === 1 ? 
