@@ -6,6 +6,7 @@ import BlockChain from './blockchain';
 import BlockMine from './blockmine';
 import { useQuery, gql, useMutation } from '@apollo/client';
 import { Button, FormLabel, Input, Select, Text } from '@chakra-ui/react';
+import CurrentTransaction from './ApprovedTransactions';
 
 interface UserType {
     _id: string;
@@ -27,6 +28,7 @@ function UserDashBoard(){
             <Route path='blockmine' element={<BlockMine/>}/>
             <Route path='blockchain' element={<BlockChain/>}/>
             <Route path='Profile' element={<Profile/>}/>
+            <Route path='ApprovedTransactions' element={<CurrentTransaction/>}/>
         </Routes>
         </>
     )
@@ -47,11 +49,12 @@ function NavBar(){
     return(
         <div>
             <form onSubmit={handleLogout}> 
-                <div className='w-1/2 flex flex-row justify-around'> 
+                <div className='w-2/3 flex flex-row justify-around'> 
                     <Button className='m-2'> <Link to='' state={{new_id: new_id}}>Home</Link> </Button>
                     <Button className='m-2'> <Link to='blockmine' state={{new_id: new_id}}>Block Mine</Link> </Button> 
                     <Button className='m-2'> <Link to='blockchain' state={{new_id: new_id}}>Block Chain</Link> </Button>
                     <Button className='m-2'> <Link to='Profile' state={{new_id: new_id}}>Profile</Link> </Button>
+                    <Button className='m-2'> <Link to='ApprovedTransactions' state={{new_id: new_id}}>Previous Transactions</Link> </Button>
                     <Button className='m-2' type="submit" onClick={() => setLogout(true)}> Logout </Button>
                 </div>
             </form>
