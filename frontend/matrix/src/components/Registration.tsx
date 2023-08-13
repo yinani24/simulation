@@ -1,4 +1,4 @@
-import React, { useState, ChangeEvent, FormEvent } from 'react';
+import React, { useState, ChangeEvent, FormEvent, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../utilis/Auth';
 import { gql, useMutation } from '@apollo/client';
@@ -31,14 +31,7 @@ function setUserIdInLocalStorage(userId: string | null) {
     }
 }
 
-function LoginFailedMessageWindow({ message, onDismiss }: { message: string, onDismiss: () => void }) {
-    return (
-        <div>
-            <p>{message}</p>
-            <button onClick={onDismiss}>Dismiss</button>
-        </div>
-    )
-}
+
 
 function Registration({ number, new_id }: Authen) {
 
@@ -56,10 +49,28 @@ function Registration({ number, new_id }: Authen) {
         }
     } 
     `;
-    const formRef = React.useRef<HTMLFormElement>(null);
+    const formRef = useRef<HTMLFormElement>(null);
     const [username, setUsername] = useState('');
     const [password, setPassword] = useState('');
     const [email, setEmail] = useState('');
+    const [login, setLogin] = useState(true);
+
+    const handleReset = () => {
+        setUsername('');
+        setPassword('');
+        setEmail('');
+        setLogin(true);
+
+    };
+
+    const LoginFailedMessageWindow = (message: string) => {
+        return (
+            <div className='m-2'>
+                <Text as='i' fontFamily='cursive' color='red'>Already have ${message}</Text>
+                <Button colorScheme='red' onClick={handleReset}>Dismiss</Button>
+            </div>
+        )
+    }
 
     const [createAdmin, {data: adminData, error:adminError, reset: adminReset}] = useMutation(AdminRegistration);
 
@@ -77,14 +88,12 @@ function Registration({ number, new_id }: Authen) {
                     email: email
                 }
             });
-            console.log(response)
-            console.log(response?.data.createAdmin._id)
-            //console.log(adminData?.createAdmin._id)
             setAdminIdInLocalStorage(response?.data.createAdmin._id);
             setUserIdInLocalStorage(null);
             return response
         } catch (error) {
-            console.error(error);
+            console.error(error)
+            setLogin(false);
         }
     }
 
@@ -97,14 +106,13 @@ function Registration({ number, new_id }: Authen) {
                     email: email
                 }
             });
-            console.log(response)
-            // console.log(userData?.createUser._id)
             setUserIdInLocalStorage(response?.data.createUser._id);
             setAdminIdInLocalStorage(null);
             return response
             // return response
         } catch (error) {
             console.error(error);
+            setLogin(false);
         }
     }
 
@@ -129,24 +137,16 @@ function Registration({ number, new_id }: Authen) {
             if(response){
                 auth.login(username);
                 console.log("Auth in Registration", auth.auth)
-                if (formRef.current) {
-                    formRef.current.reset();
-                }
                 navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
             }
-            // console.log(adminError)
         } //User Registration
         else{
             const response = await handleUserRegistration();
             if(response){
                 auth.login(username);
                 console.log("Auth in Registration", auth.auth)
-                if (formRef.current) {
-                    formRef.current.reset();
-                }
                 navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
             }
-            // console.log(userError)
         }
 
     };
@@ -198,17 +198,11 @@ function Registration({ number, new_id }: Authen) {
         <br/>
         {
             new_id === 1 ? 
-            (adminError && username && email && password &&
-            <LoginFailedMessageWindow
-              message={adminError.message}
-              onDismiss={() => adminReset()} 
-            />) 
+            (!login &&
+            LoginFailedMessageWindow("Admin")) 
             :
-            (userError && username && email && password &&
-            <LoginFailedMessageWindow
-                message={userError.message}
-                onDismiss={() => userReset()}
-            />)
+            (!login &&
+            LoginFailedMessageWindow("User"))
         }
         </div>
     );

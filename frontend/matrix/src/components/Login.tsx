@@ -7,8 +7,6 @@ import {
   FormControl,
   FormLabel,
   Input,
-  FormErrorMessage,
-  FormHelperText,
 } from '@chakra-ui/react'
 
 interface Authen {
@@ -32,14 +30,7 @@ function setUserIdInLocalStorage(userId: string | null) {
   }
 }
 
-function LoginFailedMessageWindow({ message, onDismiss }: { message: string, onDismiss: () => void }) {
-  return (
-      <div>
-          <p>{message}</p>
-          <button onClick={onDismiss}>Dismiss</button>
-      </div>
-  )
-}
+
 
 function Login({ number, new_id }: Authen) {
   const UserLogin = gql`
@@ -67,9 +58,16 @@ function Login({ number, new_id }: Authen) {
   const formRef = useRef<HTMLFormElement>(null);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
+  const [login, setLogin] = useState(true);
   const auth = useAuth();
   const navigate = useNavigate();
   
+  const handleReset = () => {
+    setUsername('');
+    setPassword('');
+    setLogin(true);
+  };
+
   const { loading: userLoading, error: userError, data: userData, refetch: userRefetch } = useQuery(UserLogin, {
     variables: {
       matrixID: localStorage.getItem("matrix_id") || ``,
@@ -107,14 +105,13 @@ function Login({ number, new_id }: Authen) {
           setUserIdInLocalStorage(null);
           auth.login(username);
           console.log("Auth in Login", auth.auth)
-          if (formRef.current) {
-            formRef.current.reset();
-          }
+          handleReset()
           navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
         }
       }
       catch(error){
         console.log(error)
+        setLogin(false)
       }    
     } //User Login
     else {
@@ -126,14 +123,13 @@ function Login({ number, new_id }: Authen) {
           setAdminIdInLocalStorage(null);
           auth.login(username);
           console.log("Auth in Login", auth.auth)
-          if (formRef.current) {
-            formRef.current.reset();
-          }
+          handleReset()
           navigate(`${username}${number}`, { state: { new_id: new_id }, replace: true })
         }
       }
       catch(error){
         console.log(error)
+        setLogin(false)
       }
     }
   };
@@ -164,14 +160,14 @@ function Login({ number, new_id }: Authen) {
         <Button type="submit">Login</Button>
         </div>
       </form>
-      <br/>
       {
-          new_id === 1 ? 
-          (adminError && username && password && 
-          <LoginFailedMessageWindow message={adminError.message} onDismiss={() => formRef.current?.reset()}/>)
-          : 
-          (userError && username && password && 
-          <LoginFailedMessageWindow message={userError.message} onDismiss={() => formRef.current?.reset()}/>)
+          !login ?
+            <div className='m-2'>
+            <Text as='i' fontFamily='cursive' color='red'>Could not login! Please Try Again</Text>
+            <Button colorScheme='red' onClick={handleReset}>Dismiss</Button>
+            </div>
+          :
+          null
       }
       <div className='w-1/4'>
         <Button className='ml-2' onClick={navigatetologin}>
